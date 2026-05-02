@@ -1,0 +1,252 @@
+<!doctype html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="utf-8">
+<title>Cards & Data</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  body { margin: 0; padding: 32px; background: var(--bg-0); }
+  h1 { color: var(--fg-1); margin: 0 0 8px; }
+  .sub { color: var(--fg-3); margin: 0 0 24px; max-width: 720px; }
+  .panel { background: var(--bg-1); border: 1px solid var(--border-1); border-radius: var(--r-lg); padding: 28px; margin-bottom: 24px; max-width: 1200px; }
+  .panel h2 { margin: 0 0 4px; color: var(--fg-1); font-size: 20px; font-weight: 600; }
+  .panel p.intro { color: var(--fg-3); font-size: 13px; margin: 0 0 24px; }
+
+  /* ---- listing card ---- */
+  .listing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .listing {
+    background: var(--bg-1); border: 1px solid var(--border-2); border-radius: var(--r-lg);
+    overflow: hidden; box-shadow: var(--shadow-2); transition: transform 220ms var(--ease-out), box-shadow 220ms;
+  }
+  .listing:hover { transform: translateY(-2px); box-shadow: var(--shadow-3); }
+  .listing .photo {
+    aspect-ratio: 16/10; position: relative;
+    background:
+      radial-gradient(ellipse at 30% 70%, rgba(91,136,255,.18), transparent 60%),
+      radial-gradient(ellipse at 70% 30%, rgba(187,92,246,.14), transparent 60%),
+      linear-gradient(180deg, #1B2230 0%, #0E141B 100%);
+    overflow: hidden;
+  }
+  .listing .photo svg { position: absolute; bottom: 18%; left: 50%; transform: translateX(-50%); width: 78%; opacity: .9; }
+  .source-badge {
+    position: absolute; bottom: 12px; inset-inline-start: 12px;
+    background: rgba(255,255,255,.95); color: #ED2024; font-weight: 700;
+    font-size: 11px; padding: 5px 10px; border-radius: 999px; letter-spacing: .04em;
+  }
+  .photo .heart {
+    position: absolute; top: 12px; inset-inline-end: 12px; width: 36px; height: 36px;
+    border-radius: 999px; background: rgba(11,15,20,.6); backdrop-filter: blur(20px);
+    display: flex; align-items: center; justify-content: center; color: #fff;
+    border: 1px solid rgba(255,255,255,.1);
+  }
+  .photo .heart i { width: 18px; height: 18px; }
+
+  .listing .info { padding: 16px; }
+  .listing .title { font-size: 15px; font-weight: 600; color: var(--fg-1); margin: 0 0 2px; }
+  .listing .submeta { font-size: 12px; color: var(--fg-3); margin: 0 0 12px; }
+  .listing .price-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .listing .price { font-size: 22px; font-weight: 700; color: var(--fg-1); }
+  .listing .price .num { font-variant-numeric: tabular-nums; direction: ltr; display: inline-block; }
+
+  .listing .stats { display: flex; gap: 12px; margin-top: 10px; }
+  .stat { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--fg-3); }
+  .stat i { width: 12px; height: 12px; }
+
+  /* sparkline */
+  .listing .spark { margin-top: 14px; height: 40px; width: 100%; display: block; }
+
+  /* price gauge */
+  .gauge-tile { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 24px;
+                background: var(--bg-1); border: 1px solid var(--border-1); border-radius: var(--r-lg); }
+  .gauge { position: relative; width: 180px; height: 110px; }
+  .gauge .label-c { position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%);
+                   text-align: center; width: 200px; }
+  .gauge .delta { white-space: nowrap; }
+  .gauge .verdict { font-size: 20px; font-weight: 700; }
+  .gauge .verdict.good { color: var(--success); }
+  .gauge .verdict.fair { color: var(--warning); }
+  .gauge .verdict.exp { color: var(--danger); }
+  .gauge .delta { font-size: 11px; color: var(--fg-3); margin-top: 2px; }
+
+  /* badges row */
+  .price-pill {
+    display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 600; letter-spacing: .02em;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .listing .price-row { min-width: 0; flex-wrap: wrap; row-gap: 6px; }
+  .listing .price { white-space: nowrap; }
+  .pill-good { background: var(--success-soft); color: var(--success); }
+  .pill-fair { background: var(--warning-soft); color: var(--warning); }
+  .pill-exp  { background: var(--danger-soft);  color: var(--danger); }
+
+  .stat-card-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .stat-card {
+    background: var(--bg-2); border-radius: var(--r-md); padding: 18px;
+    border: 1px solid var(--border-1);
+  }
+  .stat-card .label { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-3); font-weight: 600; }
+  .stat-card .val { font-size: 24px; font-weight: 700; color: var(--fg-1); margin-top: 8px; }
+  .stat-card .trend { font-size: 12px; margin-top: 4px; }
+  .stat-card .trend.up { color: var(--success); }
+  .stat-card .trend.dn { color: var(--danger); }
+
+  .gauge-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 900px; }
+</style>
+</head>
+<body>
+  <h1 class="display-2">03 — Components · Cards & Data</h1>
+  <p class="sub">כרטיסי רכב, מד מחיר חכם (price gauge), sparklines, ו-stat tiles. הרכיבים האלה הם הלב של המוצר — כל מסך תוצאות, כל מסך פרטים, מסתמך עליהם.</p>
+
+  <div class="panel">
+    <h2>Listing card</h2>
+    <p class="intro">תמונה full-bleed עם source badge ולב, מטא-תיאור, מחיר, קצוות סטטיסטיים, ו-sparkline היסטורי בתחתית. ללא border בולט; ההפרדה היא דרך shadow.</p>
+
+    <div class="listing-grid">
+      <article class="listing">
+        <div class="photo">
+          <span class="source-badge">yad2</span>
+          <span class="heart"><i data-lucide="heart"></i></span>
+          <svg viewBox="0 0 200 80"><path d="M20,60 C30,40 50,30 80,30 L120,30 C150,30 170,40 180,60 L20,60 Z" fill="#5B7088"/><circle cx="55" cy="60" r="10" fill="#0B0F14" stroke="#3A4554" stroke-width="2"/><circle cx="145" cy="60" r="10" fill="#0B0F14" stroke="#3A4554" stroke-width="2"/></svg>
+        </div>
+        <div class="info">
+          <h3 class="title">טויוטה קורולה הייבריד</h3>
+          <p class="submeta">2021 · יד שנייה</p>
+          <div class="price-row">
+            <div class="price">₪ <span class="num">129,900</span></div>
+            <span class="price-pill pill-good">מחיר טוב</span>
+          </div>
+          <div class="stats">
+            <span class="stat"><i data-lucide="gauge"></i><span class="num">45,000</span> ק״מ</span>
+            <span class="stat"><i data-lucide="map-pin"></i>תל אביב</span>
+            <span class="stat"><i data-lucide="zap"></i>היברידי</span>
+          </div>
+          <svg class="spark" viewBox="0 0 200 40" preserveAspectRatio="none">
+            <defs><linearGradient id="g1" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#22C55E" stop-opacity=".4"/><stop offset="1" stop-color="#22C55E" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0,15 L25,18 L50,12 L75,20 L100,16 L125,22 L150,28 L175,32 L200,30 L200,40 L0,40 Z" fill="url(#g1)"/>
+            <path d="M0,15 L25,18 L50,12 L75,20 L100,16 L125,22 L150,28 L175,32 L200,30" stroke="#22C55E" stroke-width="1.5" fill="none"/>
+          </svg>
+        </div>
+      </article>
+
+      <article class="listing">
+        <div class="photo">
+          <span class="source-badge" style="color: #2BA8E1;">yad2</span>
+          <span class="heart"><i data-lucide="heart"></i></span>
+          <svg viewBox="0 0 200 80"><path d="M20,60 C30,40 50,30 80,30 L120,30 C150,30 170,40 180,60 L20,60 Z" fill="#7B6F94"/><circle cx="55" cy="60" r="10" fill="#0B0F14" stroke="#3A4554" stroke-width="2"/><circle cx="145" cy="60" r="10" fill="#0B0F14" stroke="#3A4554" stroke-width="2"/></svg>
+        </div>
+        <div class="info">
+          <h3 class="title">יונדאי אייוניק 5</h3>
+          <p class="submeta">2023 · יד ראשונה</p>
+          <div class="price-row">
+            <div class="price">₪ <span class="num">189,500</span></div>
+            <span class="price-pill pill-fair">סביר</span>
+          </div>
+          <div class="stats">
+            <span class="stat"><i data-lucide="gauge"></i><span class="num">22,500</span> ק״מ</span>
+            <span class="stat"><i data-lucide="map-pin"></i>חיפה</span>
+            <span class="stat"><i data-lucide="bolt"></i>חשמלי</span>
+          </div>
+          <svg class="spark" viewBox="0 0 200 40" preserveAspectRatio="none">
+            <defs><linearGradient id="g2" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#F59E0B" stop-opacity=".4"/><stop offset="1" stop-color="#F59E0B" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0,28 L25,24 L50,26 L75,18 L100,22 L125,16 L150,18 L175,14 L200,16 L200,40 L0,40 Z" fill="url(#g2)"/>
+            <path d="M0,28 L25,24 L50,26 L75,18 L100,22 L125,16 L150,18 L175,14 L200,16" stroke="#F59E0B" stroke-width="1.5" fill="none"/>
+          </svg>
+        </div>
+      </article>
+
+      <article class="listing">
+        <div class="photo">
+          <span class="source-badge">yad2</span>
+          <span class="heart"><i data-lucide="heart"></i></span>
+          <svg viewBox="0 0 200 80"><path d="M20,60 C30,40 50,30 80,30 L120,30 C150,30 170,40 180,60 L20,60 Z" fill="#445166"/><circle cx="55" cy="60" r="10" fill="#0B0F14" stroke="#3A4554" stroke-width="2"/><circle cx="145" cy="60" r="10" fill="#0B0F14" stroke="#3A4554" stroke-width="2"/></svg>
+        </div>
+        <div class="info">
+          <h3 class="title">סקודה אוקטביה</h3>
+          <p class="submeta">2019 · יד שלישית</p>
+          <div class="price-row">
+            <div class="price">₪ <span class="num">98,000</span></div>
+            <span class="price-pill pill-exp">יקר ב-12%</span>
+          </div>
+          <div class="stats">
+            <span class="stat"><i data-lucide="gauge"></i><span class="num">120,000</span> ק״מ</span>
+            <span class="stat"><i data-lucide="map-pin"></i>פתח תקווה</span>
+            <span class="stat"><i data-lucide="droplet"></i>בנזין</span>
+          </div>
+          <svg class="spark" viewBox="0 0 200 40" preserveAspectRatio="none">
+            <defs><linearGradient id="g3" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#EF4444" stop-opacity=".4"/><stop offset="1" stop-color="#EF4444" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0,32 L25,28 L50,24 L75,22 L100,18 L125,14 L150,16 L175,10 L200,8 L200,40 L0,40 Z" fill="url(#g3)"/>
+            <path d="M0,32 L25,28 L50,24 L75,22 L100,18 L125,14 L150,16 L175,10 L200,8" stroke="#EF4444" stroke-width="1.5" fill="none"/>
+          </svg>
+        </div>
+      </article>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Price gauge</h2>
+    <p class="intro">מחוון חצי-עיגול עם שלושה אזורים. המחט מוקמת לפי הציון מול ממוצע השוק. ערך אחד פלוס פסילה ב-3 רמות (טוב/סביר/יקר).</p>
+
+    <div class="gauge-row">
+      <div class="gauge-tile">
+        <div class="gauge">
+          <svg viewBox="0 0 200 110" width="180" height="110">
+            <path d="M10,100 A90,90 0 0,1 70,18" stroke="#22C55E" stroke-width="14" fill="none" stroke-linecap="round"/>
+            <path d="M70,18 A90,90 0 0,1 130,18" stroke="#F59E0B" stroke-width="14" fill="none" stroke-linecap="round"/>
+            <path d="M130,18 A90,90 0 0,1 190,100" stroke="#EF4444" stroke-width="14" fill="none" stroke-linecap="round"/>
+            <g transform="translate(100,100) rotate(-50)">
+              <line x1="0" y1="0" x2="0" y2="-78" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+              <circle r="6" fill="#5B88FF"/>
+            </g>
+          </svg>
+          <div class="label-c"><div class="verdict good">טוב</div><div class="delta">8% מתחת לממוצע</div></div>
+        </div>
+      </div>
+
+      <div class="gauge-tile">
+        <div class="gauge">
+          <svg viewBox="0 0 200 110" width="180" height="110">
+            <path d="M10,100 A90,90 0 0,1 70,18" stroke="#22C55E" stroke-width="14" fill="none" stroke-linecap="round"/>
+            <path d="M70,18 A90,90 0 0,1 130,18" stroke="#F59E0B" stroke-width="14" fill="none" stroke-linecap="round"/>
+            <path d="M130,18 A90,90 0 0,1 190,100" stroke="#EF4444" stroke-width="14" fill="none" stroke-linecap="round"/>
+            <g transform="translate(100,100) rotate(0)">
+              <line x1="0" y1="0" x2="0" y2="-78" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+              <circle r="6" fill="#5B88FF"/>
+            </g>
+          </svg>
+          <div class="label-c"><div class="verdict fair">סביר</div><div class="delta">2% מעל לממוצע</div></div>
+        </div>
+      </div>
+
+      <div class="gauge-tile">
+        <div class="gauge">
+          <svg viewBox="0 0 200 110" width="180" height="110">
+            <path d="M10,100 A90,90 0 0,1 70,18" stroke="#22C55E" stroke-width="14" fill="none" stroke-linecap="round"/>
+            <path d="M70,18 A90,90 0 0,1 130,18" stroke="#F59E0B" stroke-width="14" fill="none" stroke-linecap="round"/>
+            <path d="M130,18 A90,90 0 0,1 190,100" stroke="#EF4444" stroke-width="14" fill="none" stroke-linecap="round"/>
+            <g transform="translate(100,100) rotate(50)">
+              <line x1="0" y1="0" x2="0" y2="-78" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+              <circle r="6" fill="#5B88FF"/>
+            </g>
+          </svg>
+          <div class="label-c"><div class="verdict exp">יקר</div><div class="delta">12% מעל לממוצע</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Stat tiles</h2>
+    <p class="intro">סטטיסטיקות KPI עם דלתא צבעונית.</p>
+    <div class="stat-card-grid">
+      <div class="stat-card"><div class="label">רכבים פעילים</div><div class="val num">12,847</div><div class="trend up">↑ 4.2% מהשבוע שעבר</div></div>
+      <div class="stat-card"><div class="label">מחיר ממוצע</div><div class="val"><span style="display:inline-block;direction:ltr;">₪ <span class="num">142,300</span></span></div><div class="trend dn">↓ 1.8% החודש</div></div>
+      <div class="stat-card"><div class="label">ירידות מחיר היום</div><div class="val num">238</div><div class="trend up">↑ 12 חדשות</div></div>
+      <div class="stat-card"><div class="label">שמורים אצלך</div><div class="val num">17</div><div class="trend" style="color: var(--fg-3);">3 חדשים השבוע</div></div>
+    </div>
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>

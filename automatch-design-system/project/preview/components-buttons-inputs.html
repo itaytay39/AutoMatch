@@ -1,0 +1,193 @@
+<!doctype html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="utf-8">
+<title>Buttons & Inputs</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  body { margin: 0; padding: 32px; background: var(--bg-0); }
+  h1 { color: var(--fg-1); margin: 0 0 8px; }
+  .sub { color: var(--fg-3); margin: 0 0 24px; max-width: 720px; }
+  .panel { background: var(--bg-1); border: 1px solid var(--border-1); border-radius: var(--r-lg); padding: 28px; margin-bottom: 24px; max-width: 1100px; }
+  .panel h2 { margin: 0 0 4px; color: var(--fg-1); font-size: 20px; font-weight: 600; }
+  .panel p.intro { color: var(--fg-3); font-size: 13px; margin: 0 0 20px; }
+
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+  .label { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-3); margin: 8px 0 8px; font-weight: 600; }
+
+  /* ---- buttons ---- */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+         font-family: var(--font-sans); font-weight: 600; font-size: 14px;
+         border: 0; cursor: pointer; transition: all 140ms var(--ease-out);
+         padding: 0 20px; height: 44px; border-radius: 999px; }
+  .btn:active { transform: scale(.97); transition: transform 80ms; }
+  .btn-primary {
+    background: var(--gradient-primary); color: #fff;
+    box-shadow: 0 1px 0 rgba(255,255,255,.15) inset;
+  }
+  .btn-primary:hover { box-shadow: var(--glow-primary), 0 1px 0 rgba(255,255,255,.15) inset; transform: translateY(-1px); }
+  .btn-secondary {
+    background: transparent; color: var(--fg-1); border: 1.5px solid var(--border-3);
+  }
+  .btn-secondary:hover { background: var(--bg-2); }
+  .btn-ghost {
+    background: rgba(255,255,255,.04); color: var(--fg-1);
+  }
+  .btn-ghost:hover { background: rgba(255,255,255,.08); }
+  .btn-icon {
+    width: 44px; padding: 0; background: rgba(255,255,255,.04); color: var(--fg-2);
+  }
+  .btn-icon:hover { background: rgba(255,255,255,.08); color: var(--fg-1); }
+  .btn-danger {
+    background: var(--danger-soft); color: var(--danger); border: 1.5px solid transparent;
+  }
+  .btn-danger:hover { background: rgba(239,68,68,.22); }
+  .btn-sm { height: 36px; font-size: 13px; padding: 0 14px; }
+  .btn-lg { height: 52px; font-size: 15px; padding: 0 28px; }
+  .btn[disabled] { opacity: .4; cursor: not-allowed; transform: none; }
+  .btn .i { width: 18px; height: 18px; }
+
+  /* ---- inputs ---- */
+  .input-wrap { position: relative; max-width: 440px; }
+  .input {
+    width: 100%; height: 48px; box-sizing: border-box;
+    background: var(--bg-2); color: var(--fg-1);
+    border: 1.5px solid transparent; border-radius: var(--r-md);
+    padding: 0 16px; font-family: var(--font-sans); font-size: 14px;
+    transition: all 140ms var(--ease-out);
+    outline: none;
+  }
+  .input::placeholder { color: var(--fg-3); }
+  .input:focus { border-color: var(--primary-blue); box-shadow: 0 0 0 4px rgba(91,136,255,.18); }
+  .input.with-icon { padding-inline-start: 44px; }
+  .input-icon { position: absolute; inset-inline-start: 14px; top: 50%; transform: translateY(-50%);
+                color: var(--fg-3); width: 20px; height: 20px; }
+
+  .field-label { font-size: 12px; color: var(--fg-3); margin-bottom: 6px; display: block; }
+
+  /* ---- chips ---- */
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 32px; padding: 0 14px; border-radius: 999px;
+    background: var(--bg-2); color: var(--fg-2); font-size: 13px; font-weight: 500;
+    border: 1px solid var(--border-1); cursor: pointer; transition: all 140ms var(--ease-out);
+  }
+  .chip:hover { background: var(--bg-3); color: var(--fg-1); }
+  .chip.active { background: var(--gradient-primary); color: #fff; border-color: transparent; }
+  .chip .x { width: 14px; height: 14px; opacity: .8; }
+
+  /* ---- toggle ---- */
+  .toggle { position: relative; width: 44px; height: 26px; background: var(--bg-3);
+            border-radius: 999px; cursor: pointer; transition: background 200ms; }
+  .toggle::after { content: ""; position: absolute; top: 3px; right: 3px; width: 20px; height: 20px;
+                   background: #fff; border-radius: 50%; transition: all 200ms var(--ease-out); }
+  .toggle.on { background: var(--gradient-primary); }
+  .toggle.on::after { right: calc(100% - 23px); }
+</style>
+</head>
+<body>
+  <h1 class="display-2">03 — Components · Buttons & Inputs</h1>
+  <p class="sub">כפתורים, שדות קלט, צ'יפים, מתגים. כל אחד מהם זמין במספר וריאנטים. הגרדיאנט מוקדש ל-CTA הראשי בלבד.</p>
+
+  <div class="panel">
+    <h2>Buttons</h2>
+    <p class="intro">Primary בלעדי לפעולה הראשית במסך. Secondary לפעולות משנה. Ghost לאזורים סמוכים. Icon לסרגלי כלים.</p>
+
+    <div class="label">Primary · Secondary · Ghost · Danger</div>
+    <div class="row">
+      <button class="btn btn-primary"><i class="i" data-lucide="search"></i>חפש רכב</button>
+      <button class="btn btn-secondary">סנן תוצאות</button>
+      <button class="btn btn-ghost">בטל</button>
+      <button class="btn btn-danger"><i class="i" data-lucide="trash-2"></i>הסר חיפוש</button>
+    </div>
+
+    <div class="label">Sizes</div>
+    <div class="row">
+      <button class="btn btn-primary btn-sm">קטן</button>
+      <button class="btn btn-primary">רגיל</button>
+      <button class="btn btn-primary btn-lg">גדול</button>
+    </div>
+
+    <div class="label">Icon buttons</div>
+    <div class="row">
+      <button class="btn btn-icon" aria-label="שמור"><i class="i" data-lucide="heart"></i></button>
+      <button class="btn btn-icon" aria-label="התראות"><i class="i" data-lucide="bell"></i></button>
+      <button class="btn btn-icon" aria-label="שתף"><i class="i" data-lucide="share-2"></i></button>
+      <button class="btn btn-icon" aria-label="השווה"><i class="i" data-lucide="arrow-left-right"></i></button>
+      <button class="btn btn-icon" aria-label="תפריט"><i class="i" data-lucide="menu"></i></button>
+    </div>
+
+    <div class="label">Disabled</div>
+    <div class="row">
+      <button class="btn btn-primary" disabled>אין תוצאות</button>
+      <button class="btn btn-secondary" disabled>טעינה...</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Inputs</h2>
+    <p class="intro">שדות קלט בעלי רקע <code>--bg-2</code>, ללא border במנוחה, focus ring כחול חזק.</p>
+
+    <div class="label">Search input</div>
+    <div class="input-wrap" style="margin-bottom: 20px;">
+      <i class="i input-icon" data-lucide="search"></i>
+      <input class="input with-icon" placeholder="טויוטה קורולה, יונדאי i30...">
+    </div>
+
+    <div class="label">Text fields</div>
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; max-width: 900px;">
+      <div>
+        <label class="field-label">תקציב מקסימלי</label>
+        <input class="input" value="₪ 130,000">
+      </div>
+      <div>
+        <label class="field-label">קילומטראז' מקסימלי</label>
+        <input class="input" placeholder="לדוגמה: 80,000">
+      </div>
+      <div>
+        <label class="field-label">דוא״ל (focus state)</label>
+        <input class="input" placeholder="you@example.com" autofocus>
+      </div>
+      <div>
+        <label class="field-label">שדה לא פעיל</label>
+        <input class="input" value="לא זמין" disabled>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Chips & Toggles</h2>
+    <p class="intro">צ'יפים לסינון מהיר וטאגים. מצב active נצבע בגרדיאנט.</p>
+
+    <div class="label">Filter chips</div>
+    <div class="row">
+      <button class="chip active">כל הרכבים</button>
+      <button class="chip">היברידי</button>
+      <button class="chip">חשמלי</button>
+      <button class="chip">בנזין</button>
+      <button class="chip">אוטומט</button>
+      <button class="chip">עד ₪150K</button>
+    </div>
+
+    <div class="label">Active filter chips (with remove)</div>
+    <div class="row">
+      <button class="chip active">2020-2024 <i class="x" data-lucide="x"></i></button>
+      <button class="chip active">תל אביב <i class="x" data-lucide="x"></i></button>
+      <button class="chip active">עד 60,000 ק״מ <i class="x" data-lucide="x"></i></button>
+    </div>
+
+    <div class="label">Toggles</div>
+    <div class="row">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span class="toggle on"></span><span style="color: var(--fg-1); font-size: 14px;">התראות מחיר</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; margin-inline-start: 24px;">
+        <span class="toggle"></span><span style="color: var(--fg-2); font-size: 14px;">רכבים מאוסף בלבד</span>
+      </div>
+    </div>
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>

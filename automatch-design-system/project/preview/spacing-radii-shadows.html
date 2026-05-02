@@ -1,0 +1,102 @@
+<!doctype html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="utf-8">
+<title>Spacing, Radii & Shadows</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 32px; background: var(--bg-0); }
+  h1 { color: var(--fg-1); margin: 0 0 8px; }
+  .sub { color: var(--fg-3); margin: 0 0 24px; max-width: 720px; }
+  .panel { background: var(--bg-1); border: 1px solid var(--border-1); border-radius: var(--r-lg); padding: 28px; margin-bottom: 24px; max-width: 1100px; }
+  .panel h2 { margin: 0 0 4px; color: var(--fg-1); font-size: 20px; font-weight: 600; }
+  .panel p.sub { margin: 0 0 20px; }
+
+  /* spacing */
+  .sp-row { display: grid; grid-template-columns: 60px 1fr 80px 80px; gap: 16px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-1); }
+  .sp-row:last-child { border-bottom: 0; }
+  .sp-name { font-family: var(--font-mono); font-size: 12px; color: var(--fg-3); }
+  .sp-bar { height: 16px; background: var(--gradient-cool); border-radius: 999px; }
+  .sp-px { font-family: var(--font-mono); font-size: 12px; color: var(--fg-2); text-align: right; }
+  .sp-rem { font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); text-align: right; }
+
+  /* radii */
+  .r-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 16px; }
+  .r-tile { background: var(--bg-2); border: 1px solid var(--border-1); height: 96px; display: flex; align-items: end; justify-content: center; padding-bottom: 8px; }
+  .r-tile span { font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); }
+
+  /* shadows */
+  .sh-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+  .sh-tile {
+    background: var(--bg-1); border: 1px solid var(--border-1);
+    border-radius: var(--r-lg); height: 140px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: var(--fg-2); font-size: 13px;
+  }
+  .sh-tile code { font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); margin-top: 6px; }
+  .sh-1 { box-shadow: var(--shadow-1); }
+  .sh-2 { box-shadow: var(--shadow-2); }
+  .sh-3 { box-shadow: var(--shadow-3); }
+  .sh-4 { box-shadow: var(--shadow-4); }
+
+  .glow-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 24px; }
+  .gl-tile {
+    height: 140px; border-radius: var(--r-lg);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 600; font-size: 14px;
+  }
+  .gl-blue   { background: var(--primary-blue); box-shadow: var(--glow-primary); }
+  .gl-purple { background: var(--accent-purple); box-shadow: var(--glow-purple); }
+  .gl-cyan   { background: var(--electric-cyan); color: #002233; box-shadow: var(--glow-cyan); }
+</style>
+</head>
+<body>
+  <h1 class="display-2">Spacing · Radii · Shadows</h1>
+  <p class="sub">בסיס 4px. הקצב הנפוץ הוא 4 / 8 / 12 / 16 / 24 / 32. רדיוסים פרוגרסיביים בהתאם להירארכיה. צללים שכבתיים, כהים, מותאמים ל-dark mode.</p>
+
+  <div class="panel">
+    <h2>Spacing scale</h2>
+    <p class="sub">בסיס 4px. כל token עולה בקצב מזרחי-קל. מתחת ל-`--sp-4` משתמשים רק בריווחים פנימיים בתוך אייקונים/אלמנטים קטנים.</p>
+    <div class="sp-row"><span class="sp-name">--sp-1</span><div class="sp-bar" style="width: 4px;"></div><span class="sp-px">4 px</span><span class="sp-rem">.25rem</span></div>
+    <div class="sp-row"><span class="sp-name">--sp-2</span><div class="sp-bar" style="width: 8px;"></div><span class="sp-px">8 px</span><span class="sp-rem">.5rem</span></div>
+    <div class="sp-row"><span class="sp-name">--sp-3</span><div class="sp-bar" style="width: 12px;"></div><span class="sp-px">12 px</span><span class="sp-rem">.75rem</span></div>
+    <div class="sp-row"><span class="sp-name">--sp-4</span><div class="sp-bar" style="width: 16px;"></div><span class="sp-px">16 px</span><span class="sp-rem">1rem</span></div>
+    <div class="sp-row"><span class="sp-name">--sp-5</span><div class="sp-bar" style="width: 20px;"></div><span class="sp-px">20 px</span><span class="sp-rem">1.25rem</span></div>
+    <div class="sp-row"><span class="sp-name">--sp-6</span><div class="sp-bar" style="width: 24px;"></div><span class="sp-px">24 px</span><span class="sp-rem">1.5rem</span></div>
+    <div class="sp-row"><span class="sp-name">--sp-7</span><div class="sp-bar" style="width: 32px;"></div><span class="sp-px">32 px</span><span class="sp-rem">2rem</span></div>
+    <div class="sp-row"><span class="sp-name">--sp-8</span><div class="sp-bar" style="width: 40px;"></div><span class="sp-px">40 px</span><span class="sp-rem">2.5rem</span></div>
+    <div class="sp-row"><span class="sp-name">--sp-9</span><div class="sp-bar" style="width: 48px;"></div><span class="sp-px">48 px</span><span class="sp-rem">3rem</span></div>
+    <div class="sp-row"><span class="sp-name">--sp-10</span><div class="sp-bar" style="width: 64px;"></div><span class="sp-px">64 px</span><span class="sp-rem">4rem</span></div>
+  </div>
+
+  <div class="panel">
+    <h2>Corner radii</h2>
+    <p class="sub">קטן ל-chips (4–8), 12 ל-inputs, 16 לכרטיסים, 20 ל-hero, 28 ל-sheets/modals, pill לכפתורים.</p>
+    <div class="r-grid">
+      <div class="r-tile" style="border-radius: 4px;"><span>xs · 4</span></div>
+      <div class="r-tile" style="border-radius: 8px;"><span>sm · 8</span></div>
+      <div class="r-tile" style="border-radius: 12px;"><span>md · 12</span></div>
+      <div class="r-tile" style="border-radius: 16px;"><span>lg · 16</span></div>
+      <div class="r-tile" style="border-radius: 20px;"><span>xl · 20</span></div>
+      <div class="r-tile" style="border-radius: 28px;"><span>2xl · 28</span></div>
+      <div class="r-tile" style="border-radius: 999px;"><span>pill</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Elevation</h2>
+    <p class="sub">צללים כהים, רב-שכבתיים. הזוהר הצבעוני שמור ל-CTA הראשי ולמחט מד-המחיר.</p>
+    <div class="sh-grid">
+      <div class="sh-tile sh-1">Shadow 1<code>0 1 2 / .40</code></div>
+      <div class="sh-tile sh-2">Shadow 2<code>0 4 12 / .45</code></div>
+      <div class="sh-tile sh-3">Shadow 3<code>0 8 24 / .50</code></div>
+      <div class="sh-tile sh-4">Shadow 4<code>0 18 40 / .55</code></div>
+    </div>
+    <div class="glow-grid">
+      <div class="gl-tile gl-blue">Primary glow</div>
+      <div class="gl-tile gl-purple">Purple glow</div>
+      <div class="gl-tile gl-cyan">Cyan glow</div>
+    </div>
+  </div>
+</body>
+</html>

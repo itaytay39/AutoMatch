@@ -1,0 +1,64 @@
+<!doctype html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="utf-8">
+<title>Colors — Neutrals</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 32px; background: var(--bg-0); }
+  .header { color: var(--fg-1); margin: 0 0 8px; }
+  .sub { color: var(--fg-3); margin: 0 0 32px; max-width: 720px; }
+  .stack { display: grid; grid-template-columns: 1fr; gap: 0; max-width: 1100px;
+           border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--border-2); }
+  .row {
+    display: grid; grid-template-columns: 240px 1fr 160px 140px;
+    align-items: center; gap: 24px;
+    padding: 22px 24px;
+    border-bottom: 1px solid var(--border-1);
+  }
+  .row:last-child { border-bottom: 0; }
+  .chip { width: 100%; height: 56px; border-radius: var(--r-md); border: 1px solid var(--border-1); }
+  .name { font-weight: 600; color: var(--fg-1); font-size: 15px; }
+  .role { color: var(--fg-3); font-size: 13px; }
+  .hex { font-family: var(--font-mono); font-size: 13px; color: var(--fg-2); }
+  .var { font-family: var(--font-mono); font-size: 12px; color: var(--fg-3); }
+</style>
+</head>
+<body>
+  <h1 class="display-2 header">01 — Color System · Neutrals</h1>
+  <p class="sub">סולם neutrals כהה עם 5 רמות בולטות. ההפרשים ביניהן זעירים בכוונה — בעיצוב dark-mode הקפיצה מ-charcoal ל-slate צריכה להיות דקה, אחרת המסך מתפרק. גבולות נמנעים; משתמשים ב-fill + shadow.</p>
+
+  <div class="stack">
+    <div class="row">
+      <div class="chip" style="background: #0B0F14;"></div>
+      <div><div class="name">Deep Charcoal</div><div class="role">רקע אפליקציה ראשי. מאחורי הכל.</div></div>
+      <div class="var">--bg-0 · --deep-charcoal</div>
+      <div class="hex">#0B0F14</div>
+    </div>
+    <div class="row">
+      <div class="chip" style="background: #12171E;"></div>
+      <div><div class="name">Charcoal</div><div class="role">משטח כרטיסים, פאנלים, sheets.</div></div>
+      <div class="var">--bg-1 · --charcoal</div>
+      <div class="hex">#12171E</div>
+    </div>
+    <div class="row">
+      <div class="chip" style="background: #18212A;"></div>
+      <div><div class="name">Slate</div><div class="role">משטח מורם — שדות קלט, רכיבים מקוננים.</div></div>
+      <div class="var">--bg-2 · --slate</div>
+      <div class="hex">#18212A</div>
+    </div>
+    <div class="row">
+      <div class="chip" style="background: #2A323C;"></div>
+      <div><div class="name">Gray</div><div class="role">גבולות חזקים, dividers, chips.</div></div>
+      <div class="var">--gray · --border-3</div>
+      <div class="hex">#2A323C</div>
+    </div>
+    <div class="row">
+      <div class="chip" style="background: #8D95A3;"></div>
+      <div><div class="name">Light Gray</div><div class="role">טקסט משני, אייקונים מושתקים.</div></div>
+      <div class="var">--light-gray · --fg-3</div>
+      <div class="hex">#8D95A3</div>
+    </div>
+  </div>
+</body>
+</html>

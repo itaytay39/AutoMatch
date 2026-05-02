@@ -1,0 +1,118 @@
+<!doctype html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="utf-8">
+<title>Typography</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 32px; background: var(--bg-0); }
+  .header { color: var(--fg-1); margin: 0 0 8px; }
+  .sub { color: var(--fg-3); margin: 0 0 32px; max-width: 720px; }
+  .stack { display: grid; grid-template-columns: 1fr; gap: 0; max-width: 1100px;
+           border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--border-2); background: var(--bg-1); }
+  .row {
+    display: grid; grid-template-columns: 180px 1fr 220px;
+    align-items: baseline; gap: 24px;
+    padding: 24px 28px;
+    border-bottom: 1px solid var(--border-1);
+  }
+  .row:last-child { border-bottom: 0; }
+  .specs { font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); }
+  .label { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--fg-3); font-weight: 600; }
+
+  .he { color: var(--fg-1); }
+  .en { color: var(--fg-2); display: block; margin-top: 6px; direction: ltr; text-align: left; }
+
+  /* mirror tokens visually */
+  .display-1 { font-size: 32px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; }
+  .display-2 { font-size: 24px; font-weight: 700; letter-spacing: -.015em; line-height: 1.15; }
+  .headline  { font-size: 20px; font-weight: 600; letter-spacing: -.01em; line-height: 1.30; }
+  .title     { font-size: 16px; font-weight: 500; line-height: 1.30; }
+  .body      { font-size: 14px; font-weight: 400; line-height: 1.50; color: var(--fg-2); }
+  .caption   { font-size: 12px; font-weight: 400; line-height: 1.50; color: var(--fg-3); }
+  .micro     { font-size: 10px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-3); }
+
+  .num-demo {
+    margin-top: 32px; max-width: 1100px; padding: 24px;
+    background: var(--bg-1); border: 1px solid var(--border-1); border-radius: var(--r-lg);
+  }
+  .num-demo h3 { margin: 0 0 12px; color: var(--fg-1); }
+  .num-row { display: flex; gap: 32px; align-items: center; flex-wrap: wrap; padding-top: 12px; }
+  .price { font-size: 28px; font-weight: 700; color: var(--fg-1); }
+  .price small { font-size: 16px; font-weight: 500; color: var(--fg-3); margin-inline-start: 6px; }
+</style>
+</head>
+<body>
+  <h1 class="display-2 header">02 — Typography</h1>
+  <p class="sub">Heebo (עברית + לטינית) ראשית, Assistant fallback לעברית, Inter fallback ללטינית. סולם הדוק; המשקל עושה את העבודה. tabular figures בכל מקום שיש בו מספר.</p>
+
+  <div class="stack">
+    <div class="row">
+      <div><span class="label">Display 1</span></div>
+      <div>
+        <div class="display-1 he">מצא את הרכב המושלם שלך</div>
+        <div class="display-1 en">Find your perfect car</div>
+      </div>
+      <div class="specs">32 / Bold / -0.02em<br>line-height 1.15</div>
+    </div>
+    <div class="row">
+      <div><span class="label">Display 2</span></div>
+      <div>
+        <div class="display-2 he">תוצאות חיפוש · 247 רכבים</div>
+        <div class="display-2 en">Search results · 247 cars</div>
+      </div>
+      <div class="specs">24 / Bold / -0.015em<br>line-height 1.15</div>
+    </div>
+    <div class="row">
+      <div><span class="label">Headline</span></div>
+      <div>
+        <div class="headline he">מדד מחיר חכם</div>
+        <div class="headline en">Smart Price Index</div>
+      </div>
+      <div class="specs">20 / SemiBold / -0.01em<br>line-height 1.30</div>
+    </div>
+    <div class="row">
+      <div><span class="label">Title</span></div>
+      <div>
+        <div class="title he">טויוטה קורולה הייבריד 2021</div>
+        <div class="title en">Toyota Corolla Hybrid 2021</div>
+      </div>
+      <div class="specs">16 / Medium<br>line-height 1.30</div>
+    </div>
+    <div class="row">
+      <div><span class="label">Body</span></div>
+      <div>
+        <div class="body he">המערכת מנתחת מחירים מ-12 אתרים שונים ומצלבת אותם עם נתוני שוק היסטוריים כדי לתת לך הערכה מדויקת בזמן אמת.</div>
+        <div class="body en">The system aggregates prices across 12 marketplaces and cross-references them with historical market data.</div>
+      </div>
+      <div class="specs">14 / Regular<br>line-height 1.50</div>
+    </div>
+    <div class="row">
+      <div><span class="label">Caption</span></div>
+      <div>
+        <div class="caption he">עודכן לפני 4 שעות · יד2</div>
+        <div class="caption en">Updated 4 hours ago · yad2</div>
+      </div>
+      <div class="specs">12 / Regular<br>line-height 1.50</div>
+    </div>
+    <div class="row">
+      <div><span class="label">Micro</span></div>
+      <div>
+        <div class="micro">01 — COLOR SYSTEM</div>
+      </div>
+      <div class="specs">10 / Medium / .08em<br>UPPERCASE</div>
+    </div>
+  </div>
+
+  <div class="num-demo">
+    <h3 class="title">Tabular numerics ב-RTL</h3>
+    <p class="caption">מספרים תמיד נרנדרים LTR (השתמש ב-class <code>.num</code>). מטבע מקבל סימן ₪ עם רווח דק לפני המספר.</p>
+    <div class="num-row">
+      <div class="price"><span>₪</span> <span class="num">129,900</span></div>
+      <div class="price"><span class="num">45,000</span> <small>ק״מ</small></div>
+      <div class="price"><span class="num">2021</span></div>
+      <div class="price"><span class="num">11.4</span> <small>ל/100ק״מ</small></div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!doctype html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="utf-8">
+<title>Colors — Semantic</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { margin: 0; padding: 32px; background: var(--bg-0); }
+  .header { color: var(--fg-1); margin: 0 0 8px; }
+  .sub { color: var(--fg-3); margin: 0 0 32px; max-width: 720px; }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; max-width: 1100px; }
+  .card {
+    background: var(--bg-1);
+    border: 1px solid var(--border-1);
+    border-radius: var(--r-lg);
+    padding: 20px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: center;
+  }
+  .swatch {
+    border-radius: var(--r-md); height: 96px; display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 16px; letter-spacing: .02em;
+  }
+  .meta .label { font-weight: 600; color: var(--fg-1); font-size: 16px; }
+  .meta .role { color: var(--fg-3); font-size: 13px; margin-top: 4px; }
+  .meta .row { display: flex; justify-content: space-between; margin-top: 14px;
+               font-family: var(--font-mono); font-size: 12px; color: var(--fg-2); }
+  .demo { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  }
+  .pill .dot { width: 6px; height: 6px; border-radius: 50%; }
+</style>
+</head>
+<body>
+  <h1 class="display-2 header">01 — Color System · Semantic</h1>
+  <p class="sub">צבעים סמנטיים עבור states ופידבק. כל אחד מגיע גם בגרסה soft (אטימות 14%) למילוי כרטיסי הודעה ו-pills.</p>
+
+  <div class="grid">
+
+    <div class="card">
+      <div class="swatch" style="background: #22C55E;">SUCCESS</div>
+      <div class="meta">
+        <div class="label">Success</div>
+        <div class="role">מחיר טוב, אישור פעולה, השלמה.</div>
+        <div class="row"><span>--success</span><span>#22C55E</span></div>
+        <div class="demo">
+          <span class="pill" style="background: var(--success-soft); color: var(--success);">
+            <span class="dot" style="background: var(--success);"></span> מחיר טוב
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="swatch" style="background: #F59E0B;">WARNING</div>
+      <div class="meta">
+        <div class="label">Warning</div>
+        <div class="role">מחיר סביר, התראה רכה, הערה.</div>
+        <div class="row"><span>--warning</span><span>#F59E0B</span></div>
+        <div class="demo">
+          <span class="pill" style="background: var(--warning-soft); color: var(--warning);">
+            <span class="dot" style="background: var(--warning);"></span> סביר
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="swatch" style="background: #EF4444;">DANGER</div>
+      <div class="meta">
+        <div class="label">Danger</div>
+        <div class="role">מחיר יקר, שגיאה, מחיקה.</div>
+        <div class="row"><span>--danger</span><span>#EF4444</span></div>
+        <div class="demo">
+          <span class="pill" style="background: var(--danger-soft); color: var(--danger);">
+            <span class="dot" style="background: var(--danger);"></span> יקר ב-12%
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="swatch" style="background: #3B82F6;">INFO</div>
+      <div class="meta">
+        <div class="label">Info</div>
+        <div class="role">מידע, התראת מערכת, רמז.</div>
+        <div class="row"><span>--info</span><span>#3B82F6</span></div>
+        <div class="demo">
+          <span class="pill" style="background: var(--info-soft); color: var(--info);">
+            <span class="dot" style="background: var(--info);"></span> חדש בשוק
+          </span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

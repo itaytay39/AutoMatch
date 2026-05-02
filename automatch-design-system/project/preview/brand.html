@@ -1,0 +1,187 @@
+<!doctype html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="utf-8">
+<title>Brand</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  body { margin: 0; padding: 32px; background: var(--bg-0); }
+  h1 { color: var(--fg-1); margin: 0 0 8px; }
+  .sub { color: var(--fg-3); margin: 0 0 24px; max-width: 720px; }
+  .panel { background: var(--bg-1); border: 1px solid var(--border-1); border-radius: var(--r-lg); padding: 28px; margin-bottom: 24px; max-width: 1100px; }
+  .panel h2 { margin: 0 0 4px; color: var(--fg-1); font-size: 20px; font-weight: 600; }
+  .panel p.intro { color: var(--fg-3); font-size: 13px; margin: 0 0 24px; }
+
+  /* logo */
+  .logo-set { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .lg-tile {
+    border-radius: var(--r-lg); border: 1px solid var(--border-1);
+    padding: 32px; display: flex; align-items: center; justify-content: center;
+    min-height: 180px;
+  }
+  .lg-dark { background: var(--bg-0); }
+  .lg-grad { background: var(--gradient-hero); }
+  .lg-light { background: #F4F6FA; }
+  .logo {
+    display: inline-flex; align-items: center; gap: 12px;
+    font-family: var(--font-sans); font-weight: 800; font-size: 28px; letter-spacing: -.02em;
+    direction: ltr;
+  }
+  .logo .mark {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: var(--gradient-primary);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--glow-primary);
+    position: relative;
+  }
+  .logo .mark svg { width: 24px; height: 24px; }
+  .logo .word { color: #fff; }
+  .lg-light .logo .word { color: #0B0F14; }
+  .lg-light .logo .mark { box-shadow: 0 6px 20px rgba(91,136,255,.30); }
+
+  /* icons grid */
+  .icon-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 12px; }
+  .icon-cell {
+    aspect-ratio: 1/1; background: var(--bg-2); border: 1px solid var(--border-1);
+    border-radius: var(--r-md);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: var(--fg-1); padding: 8px;
+  }
+  .icon-cell i { width: 24px; height: 24px; }
+  .icon-cell .nm { margin-top: 8px; font-size: 10px; color: var(--fg-3); letter-spacing: .04em; }
+
+  .icon-sizes { display: flex; gap: 24px; align-items: center; padding: 16px 0; }
+  .icon-sizes .ic { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--fg-1); }
+  .icon-sizes .ic span { font-size: 10px; color: var(--fg-3); }
+
+  .gradient-strip {
+    height: 80px; border-radius: var(--r-lg); margin-bottom: 12px;
+  }
+  .grad-name { font-family: var(--font-mono); font-size: 12px; color: var(--fg-3); }
+
+  .img-card {
+    aspect-ratio: 16/9; border-radius: var(--r-lg); overflow: hidden; position: relative;
+    background:
+      radial-gradient(ellipse at 25% 80%, rgba(91,136,255,.20), transparent 55%),
+      radial-gradient(ellipse at 75% 20%, rgba(187,92,246,.16), transparent 55%),
+      linear-gradient(180deg, #1F2935 0%, #0B0F14 100%);
+  }
+  .img-card svg { position: absolute; bottom: 14%; left: 50%; transform: translateX(-50%); width: 60%; }
+  .img-card .protect {
+    position: absolute; inset: 0; background: var(--gradient-protect); pointer-events: none;
+  }
+  .img-card .h {
+    position: absolute; bottom: 24px; right: 24px; color: #fff; font-weight: 700; font-size: 22px;
+  }
+</style>
+</head>
+<body>
+  <h1 class="display-2">Brand · Logo, Gradient & Iconography</h1>
+  <p class="sub">סימן מסחרי, גרדיאנטים מותגיים, אייקונים (Lucide). הסימן הוא כוכב/חץ בתוך גרדיאנט; המילה תמיד באנגלית, "AutoMatch", ב-Heebo Black/Bold.</p>
+
+  <div class="panel">
+    <h2>Logo</h2>
+    <p class="intro">הסימן עבד נקי הן על רקע כהה, הן על הגרדיאנט עצמו, הן על off-white. אף פעם לא לעוות, לא להוסיף outline, לא להפוך צבעים.</p>
+    <div class="logo-set">
+      <div class="lg-tile lg-dark">
+        <div class="logo">
+          <span class="mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12 L8 7 L12 11 L16 5 L21 10"/>
+              <circle cx="6" cy="17" r="2"/>
+              <circle cx="18" cy="17" r="2"/>
+              <line x1="8" y1="17" x2="16" y2="17"/>
+            </svg>
+          </span>
+          <span class="word">AutoMatch</span>
+        </div>
+      </div>
+      <div class="lg-tile lg-grad">
+        <div class="logo">
+          <span class="mark" style="background: rgba(0,0,0,.25); box-shadow: none; backdrop-filter: blur(8px);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12 L8 7 L12 11 L16 5 L21 10"/>
+              <circle cx="6" cy="17" r="2"/>
+              <circle cx="18" cy="17" r="2"/>
+              <line x1="8" y1="17" x2="16" y2="17"/>
+            </svg>
+          </span>
+          <span class="word">AutoMatch</span>
+        </div>
+      </div>
+      <div class="lg-tile lg-light">
+        <div class="logo">
+          <span class="mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12 L8 7 L12 11 L16 5 L21 10"/>
+              <circle cx="6" cy="17" r="2"/>
+              <circle cx="18" cy="17" r="2"/>
+              <line x1="8" y1="17" x2="16" y2="17"/>
+            </svg>
+          </span>
+          <span class="word">AutoMatch</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Gradients</h2>
+    <p class="intro">שלוש וריאציות. <code>--gradient-primary</code> ל-CTA. <code>--gradient-hero</code> לרקעי hero. <code>--gradient-cool</code> לדאטה ויזואלי (sparkline peaks, accent ribbons).</p>
+
+    <div class="gradient-strip" style="background: var(--gradient-primary);"></div>
+    <div class="grad-name">--gradient-primary · linear-gradient(135deg, #5B88FF, #BB5CF6)</div>
+
+    <div class="gradient-strip" style="background: var(--gradient-hero); margin-top: 20px;"></div>
+    <div class="grad-name">--gradient-hero · linear-gradient(135deg, #5B88FF, #BB5CF6 55%, #00E5FF)</div>
+
+    <div class="gradient-strip" style="background: var(--gradient-cool); margin-top: 20px;"></div>
+    <div class="grad-name">--gradient-cool · linear-gradient(135deg, #00E5FF, #5B88FF)</div>
+  </div>
+
+  <div class="panel">
+    <h2>Iconography (Lucide)</h2>
+    <p class="intro">סגנון outline · stroke 1.5px · rounded line-caps · 24px ברירת מחדל. אייקונים כיווניים נשקפים אוטומטית ב-RTL.</p>
+
+    <div class="icon-grid">
+      <div class="icon-cell"><i data-lucide="heart"></i><span class="nm">heart</span></div>
+      <div class="icon-cell"><i data-lucide="sliders-horizontal"></i><span class="nm">sliders</span></div>
+      <div class="icon-cell"><i data-lucide="bell"></i><span class="nm">bell</span></div>
+      <div class="icon-cell"><i data-lucide="bookmark"></i><span class="nm">bookmark</span></div>
+      <div class="icon-cell"><i data-lucide="share-2"></i><span class="nm">share</span></div>
+      <div class="icon-cell"><i data-lucide="arrow-left-right"></i><span class="nm">compare</span></div>
+      <div class="icon-cell"><i data-lucide="bar-chart-3"></i><span class="nm">chart</span></div>
+      <div class="icon-cell"><i data-lucide="map-pin"></i><span class="nm">location</span></div>
+      <div class="icon-cell"><i data-lucide="menu"></i><span class="nm">menu</span></div>
+      <div class="icon-cell"><i data-lucide="search"></i><span class="nm">search</span></div>
+      <div class="icon-cell"><i data-lucide="calculator"></i><span class="nm">calc</span></div>
+      <div class="icon-cell"><i data-lucide="chevron-right" style="transform: scaleX(-1);"></i><span class="nm">chevron</span></div>
+      <div class="icon-cell"><i data-lucide="user"></i><span class="nm">user</span></div>
+      <div class="icon-cell"><i data-lucide="settings"></i><span class="nm">settings</span></div>
+      <div class="icon-cell"><i data-lucide="home"></i><span class="nm">home</span></div>
+      <div class="icon-cell"><i data-lucide="zap"></i><span class="nm">hybrid</span></div>
+    </div>
+
+    <div class="icon-sizes" style="margin-top: 24px;">
+      <div class="ic"><i data-lucide="search" style="width:16px;height:16px;"></i><span>16</span></div>
+      <div class="ic"><i data-lucide="search" style="width:20px;height:20px;"></i><span>20</span></div>
+      <div class="ic"><i data-lucide="search" style="width:24px;height:24px;"></i><span>24 (default)</span></div>
+      <div class="ic"><i data-lucide="search" style="width:32px;height:32px;"></i><span>32</span></div>
+      <div class="ic"><i data-lucide="search" style="width:40px;height:40px;"></i><span>40</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Photography style</h2>
+    <p class="intro">צילומי רכב 3/4 על רקע סטודיו קר, עם protection-gradient תחתון לקריאות טקסט. ב-mockups מופיעים placeholders אסתטיים — להחליף בצילומי פרודקשן אמיתיים.</p>
+    <div class="img-card">
+      <svg viewBox="0 0 400 160" preserveAspectRatio="xMidYEnd meet"><path d="M40,120 C60,80 100,60 160,60 L240,60 C300,60 340,80 360,120 L40,120 Z" fill="#3D4A5E"/><circle cx="110" cy="120" r="20" fill="#0B0F14" stroke="#5A6B82" stroke-width="3"/><circle cx="290" cy="120" r="20" fill="#0B0F14" stroke="#5A6B82" stroke-width="3"/></svg>
+      <div class="protect"></div>
+      <div class="h">מצא את הרכב המושלם שלך</div>
+    </div>
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>
