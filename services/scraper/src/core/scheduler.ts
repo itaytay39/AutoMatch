@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client'
 import { ALL_CONNECTORS } from '../connectors/index.js'
 import { deduplicateListings } from './deduplicator.js'
 import { SearchCriteria } from './types.js'
+import { matchAndNotify, detectPriceDrops } from '@car-aggregator/notifications'
 
 const connection = { host: process.env.REDIS_HOST ?? 'localhost', port: 6379 }
 const prisma = new PrismaClient()
@@ -32,9 +33,11 @@ export function startWorker() {
       const deduped = deduplicateListings(listings)
 
       // Upsert into DB
+      const savedListings: Array<{ id: string; price: number; isNew: boolean }> = []
       for (const listing of deduped) {
         if (!listing.price || listing.year < 1990) continue
         try {
+          const existing = await prisma.listing.findUnique({ where: { source_externalId: { source: listing.source, externalId: listing.externalId } } })
           const saved = await prisma.listing.upsert({
             where: { source_externalId: { source: listing.source, externalId: listing.externalId } },
             create: listing,
@@ -42,10 +45,19 @@ export function startWorker() {
           })
           // Record price snapshot
           await prisma.priceSnapshot.create({ data: { listingId: saved.id, price: listing.price } })
+          savedListings.push({ id: saved.id, price: listing.price, isNew: !existing })
         } catch (e) {
           console.error('DB upsert error:', e)
         }
       }
+
+      // Fire notifications
+      const newListings = savedListings.filter(l => l.isNew)
+      const updatedListings = savedListings.filter(l => !l.isNew)
+      await Promise.allSettled([
+        matchAndNotify(newListings as any),
+        detectPriceDrops(updatedListings),
+      ])
 
       return { saved: deduped.length }
     },

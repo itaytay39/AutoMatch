@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { Text, Platform } from 'react-native'
 import { HomeScreen } from './src/screens/HomeScreen'
 import { SearchScreen } from './src/screens/SearchScreen'
+import { AlertsScreen } from './src/screens/AlertsScreen'
 import { colors } from './src/theme/tokens'
 
 const Tab = createBottomTabNavigator()
@@ -12,7 +13,7 @@ const TABS = [
   { name: 'ראשי', component: HomeScreen, icon: '🏠' },
   { name: 'חיפוש', component: SearchScreen, icon: '🔍' },
   { name: 'שמורים', component: HomeScreen, icon: '🤍' },
-  { name: 'התראות', component: HomeScreen, icon: '🔔' },
+  { name: 'התראות', component: AlertsScreen, icon: '🔔' },
 ]
 
 export default function App() {
