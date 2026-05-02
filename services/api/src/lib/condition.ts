@@ -17,7 +17,7 @@ export function scoreCondition(listing: {
   year: number
   mileage: number | null
   price: number
-  images: string
+  images: string | string[]
   description: string | null
   source: string
   odometerSuspicious?: boolean
@@ -59,7 +59,7 @@ export function scoreCondition(listing: {
 
   // 3. Images (0-2 pts)
   let imgCount = 0
-  try { imgCount = JSON.parse(listing.images).length } catch {}
+  try { imgCount = Array.isArray(listing.images) ? listing.images.length : JSON.parse(listing.images as string).length } catch {}
   let imgPts = 0
   if (imgCount >= 10) imgPts = 2
   else if (imgCount >= 6) imgPts = 1.5

@@ -13,7 +13,7 @@ export function analyzeListing(listing: {
   mileage: number | null
   year: number
   price: number
-  images: string
+  images: string | string[]
   description: string | null
   make: string
   model: string
@@ -48,7 +48,7 @@ export function analyzeListing(listing: {
   // Image count
   let imageCount = 0
   try {
-    imageCount = JSON.parse(listing.images).length
+    imageCount = Array.isArray(listing.images) ? listing.images.length : JSON.parse(listing.images as string).length
   } catch {}
   if (imageCount < 3) {
     redFlags.push(`תמונות מעטות (${imageCount}) — בקש תמונות נוספות`)
