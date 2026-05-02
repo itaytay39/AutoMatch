@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Listing {
+  id            String         @id @default(cuid())
+  externalId    String
+  source        String
+  url           String
+  title         String
+  make          String
+  model         String
+  year          Int
+  mileage       Int?
+  price         Int
+  city          String?
+  description   String?
+  images        String[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  priceHistory  PriceSnapshot[]
+
+  @@unique([source, externalId])
+  @@index([make, model, year])
+}
+
+model PriceSnapshot {
+  id        String   @id @default(cuid())
+  listingId String
+  price     Int
+  date      DateTime @default(now())
+  listing   Listing  @relation(fields: [listingId], references: [id])
+
+  @@index([listingId, date])
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  fcmToken  String?
+  alerts    Alert[]
+  createdAt DateTime @default(now())
+}
+
+model Alert {
+  id       String  @id @default(cuid())
+  userId   String
+  make     String?
+  model    String?
+  yearMin  Int?
+  yearMax  Int?
+  maxPrice Int?
+  maxKm    Int?
+  city     String?
+  user     User    @relation(fields: [userId], references: [id])
+}

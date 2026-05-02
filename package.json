@@ -1,0 +1,14 @@
+{
+  "name": "car-aggregator",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": ["apps/*", "services/*", "packages/*"],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "dev": "docker-compose up -d && npm run dev --workspace=services/api"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
