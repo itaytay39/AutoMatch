@@ -7,6 +7,7 @@ const base = {
   model: 'Stonic',
   year: new Date().getFullYear() - 3,
   price: 80_000,
+  mileage: 44_731,
   images: JSON.stringify(['a.jpg', 'b.jpg', 'c.jpg', 'd.jpg']),
   description: 'רכב במצב מצוין, שמור, טסט מחודש, בעלים פרטי אחד, ללא תאונות, עור, אוטומט, קמרה אחורית',
 }
