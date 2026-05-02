@@ -1,11 +1,13 @@
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { Text, Platform } from 'react-native'
+import * as Notifications from 'expo-notifications'
 import { HomeScreen } from './src/screens/HomeScreen'
 import { SearchScreen } from './src/screens/SearchScreen'
 import { AlertsScreen } from './src/screens/AlertsScreen'
 import { colors } from './src/theme/tokens'
+import { addNotificationListener, addResponseListener } from './src/services/pushNotifications'
 
 const Tab = createBottomTabNavigator()
 
@@ -17,13 +19,31 @@ const TABS = [
 ]
 
 export default function App() {
+  const notifListener = useRef<Notifications.EventSubscription | null>(null)
+  const responseListener = useRef<Notifications.EventSubscription | null>(null)
+
+  useEffect(() => {
+    notifListener.current = addNotificationListener(notification => {
+      console.log('Push received:', notification.request.content.title)
+    })
+    responseListener.current = addResponseListener(response => {
+      const data = response.notification.request.content.data as Record<string, string>
+      console.log('Push tapped — listingId:', data?.listingId)
+      // TODO: navigate to listing detail screen
+    })
+    return () => {
+      notifListener.current?.remove()
+      responseListener.current?.remove()
+    }
+  }, [])
+
   return (
     <NavigationContainer>
       <Tab.Navigator
         screenOptions={{
           headerShown: false,
           tabBarStyle: {
-            backgroundColor: 'rgba(18,23,30,0.95)',
+            backgroundColor: 'rgba(18,23,30,0.97)',
             borderTopColor: colors.border1,
             borderTopWidth: 1,
             paddingBottom: Platform.OS === 'ios' ? 20 : 8,
