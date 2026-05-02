@@ -1,5 +1,6 @@
 import { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
+import { analyzeListing } from '../lib/fraud.js'
 
 const SearchSchema = z.object({
   make: z.string().optional(),
@@ -33,7 +34,8 @@ const listings: FastifyPluginAsync = async (app) => {
       app.prisma.listing.count({ where }),
     ])
 
-    return { listings, total, page: query.page, limit: query.limit }
+    const enriched = listings.map((l) => ({ ...l, ...analyzeListing(l) }))
+    return { listings: enriched, total, page: query.page, limit: query.limit }
   })
 
   app.get('/listings/:id', async (req, reply) => {
@@ -43,7 +45,7 @@ const listings: FastifyPluginAsync = async (app) => {
       include: { priceHistory: { orderBy: { date: 'asc' } } },
     })
     if (!listing) return reply.notFound('מודעה לא נמצאה')
-    return listing
+    return { ...listing, ...analyzeListing(listing) }
   })
 }
 

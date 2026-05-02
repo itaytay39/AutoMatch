@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { colors, radii, spacing, fontSize, fontWeight } from '../theme/tokens'
 
 interface Listing {
@@ -12,6 +12,10 @@ interface Listing {
   city?: string
   source: string
   priceLabel?: 'good' | 'fair' | 'expensive'
+  daysOnLot?: number
+  odometerSuspicious?: boolean
+  redFlags?: string[]
+  dealScore?: 'great' | 'good' | 'fair' | 'suspicious'
 }
 
 interface Props {
@@ -19,20 +23,42 @@ interface Props {
   onPress?: () => void
 }
 
-const PILL = {
+const PRICE_PILL = {
   good: { bg: colors.successSoft, color: colors.success, label: 'מחיר טוב' },
   fair: { bg: colors.warningSoft, color: colors.warning, label: 'סביר' },
   expensive: { bg: colors.dangerSoft, color: colors.danger, label: 'יקר' },
 }
 
+const DEAL_BORDER: Record<string, string> = {
+  great: colors.success,
+  good: colors.border2,
+  fair: colors.border2,
+  suspicious: colors.danger,
+}
+
+function DaysOnLotBadge({ days }: { days: number }) {
+  const hot = days <= 3
+  const stale = days > 60
+  const bg = hot ? colors.successSoft : stale ? colors.dangerSoft : 'rgba(0,0,0,0.55)'
+  const color = hot ? colors.success : stale ? colors.danger : '#fff'
+  const label = hot ? `חדש · ${days} ימים` : stale ? `${days} ימים ⚠` : `${days} ימים`
+  return (
+    <View style={[s.daysBadge, { backgroundColor: bg }]}>
+      <Text style={[s.daysBadgeText, { color }]}>{label}</Text>
+    </View>
+  )
+}
+
 export function ListingCard({ listing, onPress }: Props) {
-  const pill = PILL[listing.priceLabel ?? 'fair']
+  const pill = PRICE_PILL[listing.priceLabel ?? 'fair']
   const price = listing.price.toLocaleString('he-IL')
   const km = listing.mileage?.toLocaleString('he-IL')
+  const borderColor = DEAL_BORDER[listing.dealScore ?? 'fair'] ?? colors.border2
+  const suspicious = listing.odometerSuspicious || listing.dealScore === 'suspicious'
 
   return (
-    <TouchableOpacity style={s.card} onPress={onPress} activeOpacity={0.85}>
-      {/* Photo placeholder */}
+    <TouchableOpacity style={[s.card, { borderColor }]} onPress={onPress} activeOpacity={0.85}>
+      {/* Photo */}
       <View style={s.photo}>
         <View style={s.srcBadge}>
           <Text style={s.srcText}>{listing.source}</Text>
@@ -40,9 +66,20 @@ export function ListingCard({ listing, onPress }: Props) {
         <TouchableOpacity style={s.heartBtn}>
           <Text style={s.heartIcon}>♡</Text>
         </TouchableOpacity>
-        {/* Car silhouette */}
+        {listing.daysOnLot !== undefined && (
+          <View style={s.daysOverlay}>
+            <DaysOnLotBadge days={listing.daysOnLot} />
+          </View>
+        )}
         <View style={s.carSilhouette} />
       </View>
+
+      {/* Suspicious banner */}
+      {suspicious && (
+        <View style={s.suspiciousBanner}>
+          <Text style={s.suspiciousText}>⚠ נתונים חשודים — בדוק לפני קנייה</Text>
+        </View>
+      )}
 
       {/* Info */}
       <View style={s.info}>
@@ -57,9 +94,28 @@ export function ListingCard({ listing, onPress }: Props) {
         </View>
 
         <View style={s.stats}>
-          {km && <Text style={s.stat}>{km} ק״מ</Text>}
+          {km && (
+            <Text style={[s.stat, listing.odometerSuspicious && s.statWarn]}>
+              {listing.odometerSuspicious ? '⚠ ' : ''}{km} ק״מ
+            </Text>
+          )}
           {listing.city && <Text style={s.stat}>📍 {listing.city}</Text>}
         </View>
+
+        {listing.redFlags && listing.redFlags.length > 0 && (
+          <View style={s.flagsRow}>
+            {listing.redFlags.slice(0, 2).map((f, i) => (
+              <View key={i} style={s.flagChip}>
+                <Text style={s.flagText}>{f}</Text>
+              </View>
+            ))}
+            {listing.redFlags.length > 2 && (
+              <View style={s.flagChip}>
+                <Text style={s.flagText}>+{listing.redFlags.length - 2} עוד</Text>
+              </View>
+            )}
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   )
@@ -67,94 +123,53 @@ export function ListingCard({ listing, onPress }: Props) {
 
 const s = StyleSheet.create({
   card: {
-    backgroundColor: colors.bg1,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border2,
-    overflow: 'hidden',
-    marginBottom: spacing[3],
+    backgroundColor: colors.bg1, borderRadius: radii.lg,
+    borderWidth: 1.5, overflow: 'hidden', marginBottom: spacing[3],
   },
   photo: {
-    aspectRatio: 16 / 10,
-    backgroundColor: colors.bg2,
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
+    aspectRatio: 16 / 10, backgroundColor: colors.bg2,
+    position: 'relative', alignItems: 'center', justifyContent: 'center',
   },
   srcBadge: {
-    position: 'absolute',
-    bottom: 12,
-    left: 12,
+    position: 'absolute', bottom: 12, left: 12,
     backgroundColor: 'rgba(255,255,255,0.95)',
-    borderRadius: radii.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4,
   },
-  srcText: {
-    fontSize: fontSize.micro,
-    fontWeight: fontWeight.bold,
-    color: '#ED2024',
-  },
+  srcText: { fontSize: fontSize.micro, fontWeight: fontWeight.bold, color: '#ED2024' },
   heartBtn: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 36,
-    height: 36,
-    borderRadius: radii.pill,
+    position: 'absolute', top: 12, right: 12,
+    width: 36, height: 36, borderRadius: radii.pill,
     backgroundColor: 'rgba(11,15,20,0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
   },
   heartIcon: { color: colors.fg1, fontSize: 16 },
+  daysOverlay: { position: 'absolute', bottom: 12, right: 12 },
+  daysBadge: { borderRadius: radii.pill, paddingHorizontal: 8, paddingVertical: 3 },
+  daysBadgeText: { fontSize: 10, fontWeight: fontWeight.semibold },
   carSilhouette: {
-    width: '60%',
-    height: 40,
-    backgroundColor: 'rgba(91,112,136,0.5)',
-    borderRadius: radii.md,
+    width: '60%', height: 40,
+    backgroundColor: 'rgba(91,112,136,0.5)', borderRadius: radii.md,
+  },
+  suspiciousBanner: {
+    backgroundColor: colors.dangerSoft,
+    paddingHorizontal: spacing[4], paddingVertical: 6,
+  },
+  suspiciousText: {
+    color: colors.danger, fontSize: fontSize.caption,
+    fontWeight: fontWeight.semibold, textAlign: 'right',
   },
   info: { padding: spacing[4] },
-  title: {
-    fontSize: fontSize.title,
-    fontWeight: fontWeight.semibold,
-    color: colors.fg1,
-    textAlign: 'right',
-  },
-  submeta: {
-    fontSize: fontSize.caption,
-    color: colors.fg3,
-    marginTop: 2,
-    marginBottom: spacing[3],
-    textAlign: 'right',
-  },
-  priceRow: {
-    flexDirection: 'row-reverse',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-  },
-  price: {
-    fontSize: 22,
-    fontWeight: fontWeight.bold,
-    color: colors.fg1,
-  },
-  pill: {
-    borderRadius: radii.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-  },
-  pillText: {
-    fontSize: fontSize.micro,
-    fontWeight: fontWeight.semibold,
-  },
-  stats: {
-    flexDirection: 'row-reverse',
-    gap: spacing[3],
-    marginTop: spacing[2],
-  },
-  stat: {
-    fontSize: fontSize.caption,
-    color: colors.fg3,
-  },
+  title: { fontSize: fontSize.title, fontWeight: fontWeight.semibold, color: colors.fg1, textAlign: 'right' },
+  submeta: { fontSize: fontSize.caption, color: colors.fg3, marginTop: 2, marginBottom: spacing[3], textAlign: 'right' },
+  priceRow: { flexDirection: 'row-reverse', alignItems: 'baseline', justifyContent: 'space-between' },
+  price: { fontSize: 22, fontWeight: fontWeight.bold, color: colors.fg1 },
+  pill: { borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 3 },
+  pillText: { fontSize: fontSize.micro, fontWeight: fontWeight.semibold },
+  stats: { flexDirection: 'row-reverse', gap: spacing[3], marginTop: spacing[2] },
+  stat: { fontSize: fontSize.caption, color: colors.fg3 },
+  statWarn: { color: colors.danger },
+  flagsRow: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: spacing[1], marginTop: spacing[2] },
+  flagChip: { backgroundColor: colors.dangerSoft, borderRadius: radii.pill, paddingHorizontal: 8, paddingVertical: 3 },
+  flagText: { fontSize: 10, color: colors.danger, fontWeight: fontWeight.medium },
 })
