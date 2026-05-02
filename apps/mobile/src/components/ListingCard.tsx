@@ -1,6 +1,7 @@
 import React from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { colors, radii, spacing, fontSize, fontWeight } from '../theme/tokens'
+import { ConditionBadge } from './ConditionBadge'
 
 interface Listing {
   id: string
@@ -16,6 +17,8 @@ interface Listing {
   odometerSuspicious?: boolean
   redFlags?: string[]
   dealScore?: 'great' | 'good' | 'fair' | 'suspicious'
+  condition?: { score: number; grade: 'A' | 'B' | 'C' | 'D' | 'F'; label: string }
+  market?: { priceRatingLabel: string; priceRating: string }
 }
 
 interface Props {
@@ -100,6 +103,14 @@ export function ListingCard({ listing, onPress }: Props) {
             </Text>
           )}
           {listing.city && <Text style={s.stat}>📍 {listing.city}</Text>}
+          {listing.condition && (
+            <ConditionBadge
+              score={listing.condition.score}
+              grade={listing.condition.grade}
+              label={listing.condition.label}
+              compact
+            />
+          )}
         </View>
 
         {listing.redFlags && listing.redFlags.length > 0 && (
