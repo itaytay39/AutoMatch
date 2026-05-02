@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { analyzeListing } from '../lib/fraud.js'
 import { scoreCondition } from '../lib/condition.js'
 import { compareToMarket, getSeasonalAlert } from '../lib/market.js'
+import { detectAnomalies, buildMarketContext } from '../lib/anomaly.js'
+import { checkSalvageRisk } from '../lib/salvage.js'
 
 const SearchSchema = z.object({
   make: z.string().optional(),
@@ -20,7 +22,10 @@ function enrich(l: any, peers: { price: number; mileage: number | null }[] = [])
   const fraud = analyzeListing(l)
   const condition = scoreCondition({ ...l, ...fraud })
   const market = compareToMarket(l, peers)
-  return { ...l, ...fraud, condition, market }
+  const ctx = buildMarketContext(peers.map(p => ({ ...l, price: p.price, mileage: p.mileage })))
+  const anomaly = detectAnomalies(l, ctx.avgPrice ? ctx : { avgPrice: l.price, stdPrice: 0, avgMileage: l.mileage ?? 0, stdMileage: 0 })
+  const salvage = checkSalvageRisk(l)
+  return { ...l, ...fraud, condition, market, anomaly, salvage }
 }
 
 const listings: FastifyPluginAsync = async (app) => {
