@@ -5,3 +5,8 @@ dist/
 .next/
 *.log
 .DS_Store
+google-services.json
+GoogleService-Info.plist
+*.p8
+*.keystore
+.expo/

@@ -1,0 +1,26 @@
+[build]
+builder = "dockerfile"
+
+[[services]]
+name = "api"
+source = "services/api"
+healthcheckPath = "/health"
+healthcheckTimeout = 10
+
+[services.deploy]
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[[services]]
+name = "scraper"
+source = "services/scraper"
+
+[services.deploy]
+restartPolicyType = "always"
+
+[[services]]
+name = "notifications"
+source = "services/notifications"
+
+[services.deploy]
+restartPolicyType = "always"

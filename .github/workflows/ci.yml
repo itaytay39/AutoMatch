@@ -1,4 +1,5 @@
 name: CI
+
 on:
   push:
     branches: [main]
@@ -6,7 +7,24 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Test scraper (normalizer + deduplicator)
+        run: cd services/scraper && npm install && npx vitest run
+
+      - name: Test notifications (alertMatcher + priceWatcher)
+        run: cd services/notifications && npm install && npx vitest run
+
+  e2e-tests:
+    name: E2E API Tests
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -16,9 +34,21 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 5
       redis:
         image: redis:7-alpine
         ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/caraggregator_test
+      REDIS_HOST: localhost
+      NODE_ENV: test
+      FIREBASE_PROJECT_ID: test-project
+      FIREBASE_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\nMIIEtest\n-----END PRIVATE KEY-----\n"
+      FIREBASE_CLIENT_EMAIL: test@test-project.iam.gserviceaccount.com
 
     steps:
       - uses: actions/checkout@v4
@@ -26,6 +56,35 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
-      - run: npm run build
-      - run: npm test
+
+      - name: Migrate DB
+        run: |
+          cd packages/database
+          npm install
+          npx prisma migrate deploy
+
+      - name: Build & start API
+        run: |
+          cd services/api
+          npm install
+          npm run build
+          node dist/index.js &
+          npx wait-on http://localhost:3000/health --timeout 15000
+
+      - name: Run E2E tests
+        run: |
+          cd tests
+          npm install
+          npx vitest run --config vitest.e2e.config.ts
+        env:
+          API_URL: http://localhost:3000
+
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API
+        run: docker build -t automatch-api ./services/api
+      - name: Build Notifications
+        run: docker build -t automatch-notifications ./services/notifications
