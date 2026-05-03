@@ -28,6 +28,13 @@
 - Deploy API עם vehicle lookup endpoint
 - Expo tunnel setup לגישה מהטלפון
 
+## 🔌 Plugins מותקנים
+| Plugin | Marketplace | גרסה | סטטוס |
+|--------|-------------|------|-------|
+| `frontend-design` | anthropics/claude-plugins-official | latest | ✅ פעיל |
+| `superpowers` | obra/superpowers-marketplace | 5.0.7 | ✅ פעיל |
+| `great_cto` | — | — | ❌ לא קיים בשום marketplace |
+
 ## 📋 הצעד הבא
 1. חיבור אפליקציה ל-API אמיתי (החלפת mock data)
 2. מסך פרטי רכב + כפתור "בדוק מספר רישוי"

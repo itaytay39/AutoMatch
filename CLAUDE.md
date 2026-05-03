@@ -155,3 +155,17 @@ Find a real Kia Stonic 2019-2020, under 100K km, in the Krayot area, using the a
 6. Report completion before moving to Milestone 2
 
 **Begin immediately. Do not wait for approval.**
+
+## Available Skills (Installed Plugins)
+
+### 1. `frontend-design` (anthropics/claude-plugins-official)
+**מתי להשתמש:** כשצריך לבנות UI — מסכים חדשים, קומפוננטים, עיצוב. הסקיל מייצר קוד frontend איכותי, pixel-perfect לפי design handoff.
+**הפעלה:** `/frontend-design` או כשהמשימה כוללת בניית ממשק משתמש ב-React Native / Web.
+
+### 2. `superpowers` (obra/superpowers-marketplace) — v5.0.7
+**מתי להשתמש:** כשעובדים על פיתוח — TDD, debugging, collaboration patterns, proven techniques. מספק מתודולוגיית עבודה מובנית שמשפרת את איכות הקוד ומקצרת זמן פיתוח.
+**הפעלה:** `/superpowers` לרשימת הסקילים הזמינים בתוך הפלאגין.
+
+### 3. `great_cto` — לא נמצא
+**סטטוס:** לא קיים באף marketplace מוגדר (בדקתי: anthropics/skills, obra/superpowers-marketplace, claude-plugins-official, claude-code-plugins).
+**פעולה:** אם יש URL או repo ספציפי — ניתן להוסיף ידנית. אחרת — הסקיל לא קיים בפומבי.
