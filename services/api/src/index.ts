@@ -7,6 +7,7 @@ import metricsPlugin from './plugins/metrics.js'
 import listingsRoute from './routes/listings.js'
 import alertsRoute from './routes/alerts.js'
 import usersRoute from './routes/users.js'
+import vehicleRoute from './routes/vehicle.js'
 
 const app = Fastify({
   logger: {
@@ -25,6 +26,7 @@ await app.register(metricsPlugin)
 await app.register(listingsRoute, { prefix: '/api/v1' })
 await app.register(alertsRoute, { prefix: '/api/v1' })
 await app.register(usersRoute, { prefix: '/api/v1' })
+await app.register(vehicleRoute, { prefix: '/api/v1' })
 
 app.get('/health', async () => ({
   status: 'ok',
