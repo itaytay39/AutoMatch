@@ -1,4 +1,5 @@
 FROM node:20-alpine AS builder
+RUN apk add --no-cache openssl
 WORKDIR /app
 
 # Copy monorepo root and all packages
@@ -17,6 +18,7 @@ RUN DATABASE_URL="postgresql://placeholder@placeholder:5432/placeholder" \
 RUN cd services/api && npm run build
 
 FROM node:20-alpine
+RUN apk add --no-cache openssl
 WORKDIR /app
 
 COPY --from=builder /app/services/api/dist ./dist
@@ -25,4 +27,4 @@ COPY --from=builder /app/packages ./packages
 COPY services/api/package.json ./
 
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma migrate deploy --schema=packages/database/schema.prisma && node dist/index.js"]
+CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy --schema=packages/database/schema.prisma && node dist/index.js"]
