@@ -11,9 +11,9 @@ import { colors, spacing, fontSize, fontWeight, radii, gradients } from '../them
 const CHIPS = ['הכל', 'היברידי', 'חשמלי', 'עד ₪150K', '2020+']
 
 const MOCK_LISTINGS = [
-  { id: '1', make: 'טויוטה', model: 'קורולה הייבריד', year: 2021, mileage: 45000, price: 129900, city: 'תל אביב', source: 'yad2', priceLabel: 'good' as const },
-  { id: '2', make: 'יונדאי', model: 'אייוניק 5', year: 2023, mileage: 22500, price: 189500, city: 'חיפה', source: 'yad2', priceLabel: 'fair' as const },
-  { id: '3', make: 'סקודה', model: 'אוקטביה', year: 2019, mileage: 120000, price: 98000, city: 'פתח תקווה', source: 'yad2', priceLabel: 'expensive' as const },
+  { id: '1', make: 'טויוטה', model: 'קורולה הייבריד', year: 2021, mileage: 45000, price: 129900, city: 'תל אביב', source: 'yad2', priceLabel: 'good' as const, imageUrl: 'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=800&q=80' },
+  { id: '2', make: 'יונדאי', model: 'אייוניק 5', year: 2023, mileage: 22500, price: 189500, city: 'חיפה', source: 'homeless', priceLabel: 'fair' as const, imageUrl: 'https://images.unsplash.com/photo-1593941707882-a5bba14938c7?w=800&q=80' },
+  { id: '3', make: 'סקודה', model: 'אוקטביה', year: 2019, mileage: 120000, price: 98000, city: 'פתח תקווה', source: 'autocenter', priceLabel: 'expensive' as const, imageUrl: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800&q=80' },
 ]
 
 const STATS = [

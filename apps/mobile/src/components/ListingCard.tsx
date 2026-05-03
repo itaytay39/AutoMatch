@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native'
 import { colors, radii, spacing, fontSize, fontWeight } from '../theme/tokens'
 import { ConditionBadge } from './ConditionBadge'
 
@@ -12,6 +12,7 @@ interface Listing {
   price: number
   city?: string
   source: string
+  imageUrl?: string
   priceLabel?: 'good' | 'fair' | 'expensive'
   daysOnLot?: number
   odometerSuspicious?: boolean
@@ -63,6 +64,12 @@ export function ListingCard({ listing, onPress }: Props) {
     <TouchableOpacity style={[s.card, { borderColor }]} onPress={onPress} activeOpacity={0.85}>
       {/* Photo */}
       <View style={s.photo}>
+        {listing.imageUrl ? (
+          <Image source={{ uri: listing.imageUrl }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+        ) : (
+          <View style={s.photoPlaceholder} />
+        )}
+        <View style={s.photoOverlay} />
         <View style={s.srcBadge}>
           <Text style={s.srcText}>{listing.source}</Text>
         </View>
@@ -74,7 +81,6 @@ export function ListingCard({ listing, onPress }: Props) {
             <DaysOnLotBadge days={listing.daysOnLot} />
           </View>
         )}
-        <View style={s.carSilhouette} />
       </View>
 
       {/* Suspicious banner */}
@@ -139,7 +145,15 @@ const s = StyleSheet.create({
   },
   photo: {
     aspectRatio: 16 / 10, backgroundColor: colors.bg2,
-    position: 'relative', alignItems: 'center', justifyContent: 'center',
+    position: 'relative', overflow: 'hidden',
+  },
+  photoPlaceholder: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.bg2,
+  },
+  photoOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(11,15,20,0.25)',
   },
   srcBadge: {
     position: 'absolute', bottom: 12, left: 12,
@@ -158,10 +172,6 @@ const s = StyleSheet.create({
   daysOverlay: { position: 'absolute', bottom: 12, right: 12 },
   daysBadge: { borderRadius: radii.pill, paddingHorizontal: 8, paddingVertical: 3 },
   daysBadgeText: { fontSize: 10, fontWeight: fontWeight.semibold },
-  carSilhouette: {
-    width: '60%', height: 40,
-    backgroundColor: 'rgba(91,112,136,0.5)', borderRadius: radii.md,
-  },
   suspiciousBanner: {
     backgroundColor: colors.dangerSoft,
     paddingHorizontal: spacing[4], paddingVertical: 6,
