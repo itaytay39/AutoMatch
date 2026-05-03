@@ -33,7 +33,7 @@
 |--------|-------------|------|-------|
 | `frontend-design` | anthropics/claude-plugins-official | latest | ✅ פעיל |
 | `superpowers` | obra/superpowers-marketplace | 5.0.7 | ✅ פעיל |
-| `great_cto` | — | — | ❌ לא קיים בשום marketplace |
+| `great_cto` | avelikiy/great_cto (manual) | 1.0.160 | ✅ מותקן ידנית |
 
 ## 📋 הצעד הבא
 1. חיבור אפליקציה ל-API אמיתי (החלפת mock data)

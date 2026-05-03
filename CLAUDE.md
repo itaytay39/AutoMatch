@@ -166,6 +166,9 @@ Find a real Kia Stonic 2019-2020, under 100K km, in the Krayot area, using the a
 **מתי להשתמש:** כשעובדים על פיתוח — TDD, debugging, collaboration patterns, proven techniques. מספק מתודולוגיית עבודה מובנית שמשפרת את איכות הקוד ומקצרת זמן פיתוח.
 **הפעלה:** `/superpowers` לרשימת הסקילים הזמינים בתוך הפלאגין.
 
-### 3. `great_cto` — לא נמצא
-**סטטוס:** לא קיים באף marketplace מוגדר (בדקתי: anthropics/skills, obra/superpowers-marketplace, claude-plugins-official, claude-code-plugins).
-**פעולה:** אם יש URL או repo ספציפי — ניתן להוסיף ידנית. אחרת — הסקיל לא קיים בפומבי.
+### 3. `great_cto` (avelikiy/great_cto) — v1.0.160 ✅
+**מתי להשתמש:** תהליך פיתוח מלא עם 13 agents מתמחים. מושלם לארכיטקטורה, code review, QA, אבטחה, ו-DevOps.
+**Agents זמינים:** `great_cto-architect`, `great_cto-senior-dev`, `great_cto-qa-engineer`, `great_cto-security-officer`, `great_cto-devops`, `great_cto-l3-support`, `great_cto-project-auditor`, `great_cto-ai-prompt-architect`, `great_cto-ai-eval-engineer`, `great_cto-ai-security-reviewer`, `great_cto-performance-engineer`, `great_cto-db-migration-reviewer`, `great_cto-pm`
+**Commands:** `/start`, `/audit`, `/inbox`, `/review`, `/release`, `/doctor`, `/sec`, `/rfc` ועוד 9.
+**הפעלה:** `/start` — מתחיל pipeline מלא. `/inbox` — רואה gates פתוחים. `/review` — code review מלא.
+**התקנה:** ידנית מ-`~/.claude/plugins/cache/local/great_cto/1.0.160/` (ה-CLI לא תמך בvalidation — הותקן ישירות).
