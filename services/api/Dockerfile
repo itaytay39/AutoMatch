@@ -1,25 +1,23 @@
 FROM node:20-alpine AS builder
-RUN apk add --no-cache openssl
 WORKDIR /app
 
-# Copy monorepo root and all packages
+RUN apk add --no-cache openssl
+
 COPY package.json package-lock.json* ./
 COPY packages/ ./packages/
 COPY services/api/ ./services/api/
 
-# Install all deps
 RUN npm install --workspace=services/api --workspace=packages/database
 
-# Generate Prisma client
 RUN DATABASE_URL="postgresql://placeholder@placeholder:5432/placeholder" \
     npx prisma generate --schema=packages/database/schema.prisma
 
-# Build API
 RUN cd services/api && npm run build
 
 FROM node:20-alpine
-RUN apk add --no-cache openssl
 WORKDIR /app
+
+RUN apk add --no-cache openssl
 
 COPY --from=builder /app/services/api/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
@@ -27,4 +25,4 @@ COPY --from=builder /app/packages ./packages
 COPY services/api/package.json ./
 
 EXPOSE 3000
-CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy --schema=packages/database/schema.prisma && node dist/index.js"]
+CMD ["sh", "-c", "npx prisma db push --schema=packages/database/schema.prisma --accept-data-loss && node_modules/.bin/tsx packages/database/seed.ts; node dist/index.js"]
