@@ -36,15 +36,15 @@ function AppTabs() {
         return {
           headerShown: false,
           tabBarStyle: {
-            backgroundColor: '#0E1318',
-            borderTopColor: 'rgba(255,255,255,0.06)',
+            backgroundColor: colors.bg1,
+            borderTopColor: colors.border1,
             borderTopWidth: 0.5,
             paddingBottom: Math.max(insets.bottom, 8),
             paddingTop: 10,
             height: 56 + Math.max(insets.bottom, 8),
           },
-          tabBarActiveTintColor: colors.primaryBlue,
-          tabBarInactiveTintColor: colors.fg4,
+          tabBarActiveTintColor: colors.accent,
+          tabBarInactiveTintColor: colors.fg3,
           tabBarLabelStyle: { fontSize: 10, fontWeight: '500', marginTop: 2 },
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon
