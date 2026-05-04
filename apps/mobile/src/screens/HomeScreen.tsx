@@ -1,15 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, StatusBar, TextInput, ActivityIndicator, RefreshControl,
+  StyleSheet, StatusBar, ActivityIndicator, RefreshControl,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { ListingCard } from '../components/ListingCard'
 import { colors, spacing, fontSize, fontWeight, radii } from '../theme/tokens'
 import { api } from '../services/api'
-
-const CHIPS = ['הכל', 'יד שניה', 'דילרים', 'חשמלי', 'היברידי', '2020+']
 
 interface ApiListing {
   id: string; make: string; model: string; year: number; mileage: number | null
@@ -36,8 +34,6 @@ function toCard(l: ApiListing) {
 }
 
 export function HomeScreen() {
-  const [search, setSearch] = useState('')
-  const [activeChip, setActiveChip] = useState('הכל')
   const [listings, setListings] = useState<ReturnType<typeof toCard>[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -81,45 +77,6 @@ export function HomeScreen() {
             </Text>
           </View>
         </View>
-
-        {/* Search */}
-        <View style={s.pad}>
-          <View style={s.searchBar}>
-            <Ionicons name="search-outline" size={16} color={colors.fg3} style={{ marginEnd: 8 }} />
-            <TextInput
-              style={s.searchInput}
-              placeholder="יצרן, דגם, עיר..."
-              placeholderTextColor={colors.fg4}
-              value={search}
-              onChangeText={setSearch}
-              textAlign="right"
-              autoCorrect={false}
-            />
-            {search.length > 0 && (
-              <TouchableOpacity onPress={() => setSearch('')}>
-                <Ionicons name="close-circle" size={16} color={colors.fg3} />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        {/* Category chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={s.chipsRow}
-        >
-          {CHIPS.map(chip => (
-            <TouchableOpacity
-              key={chip}
-              style={[s.chip, chip === activeChip && s.chipActive]}
-              onPress={() => setActiveChip(chip)}
-              activeOpacity={0.75}
-            >
-              <Text style={[s.chipText, chip === activeChip && s.chipTextActive]}>{chip}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
 
         {/* Section header */}
         <View style={[s.pad, s.sectionHeader]}>
@@ -184,36 +141,6 @@ const s = StyleSheet.create({
     borderColor: colors.border2,
     alignItems: 'center', justifyContent: 'center',
   },
-
-  searchBar: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    backgroundColor: colors.bg1,
-    borderRadius: radii.md,
-    borderWidth: 0.5,
-    borderColor: colors.border2,
-    paddingHorizontal: spacing[4],
-    height: 48,
-    marginBottom: spacing[4],
-  },
-  searchInput: { flex: 1, color: colors.fg1, fontSize: fontSize.body },
-
-  chipsRow: {
-    paddingHorizontal: spacing[4],
-    gap: spacing[2],
-    paddingBottom: spacing[5],
-  },
-  chip: {
-    height: 31, paddingHorizontal: 14,
-    borderRadius: radii.pill,
-    backgroundColor: colors.bg1,
-    borderWidth: 0.5,
-    borderColor: colors.border2,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  chipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
-  chipText: { color: colors.fg3, fontSize: 12, fontWeight: fontWeight.medium },
-  chipTextActive: { color: '#fff', fontWeight: fontWeight.semibold },
 
   sectionHeader: {
     flexDirection: 'row-reverse',

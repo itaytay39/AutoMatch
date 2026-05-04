@@ -98,7 +98,7 @@ export function SearchScreen() {
           <Ionicons name="search-outline" size={16} color={colors.fg3} style={{ marginEnd: 8 }} />
           <TextInput
             style={s.searchInput}
-            placeholder="Toyota, Kia, חיפה..."
+            placeholder="חיפה, Toyota, Kia..."
             placeholderTextColor={colors.fg4}
             value={query}
             onChangeText={setQuery}

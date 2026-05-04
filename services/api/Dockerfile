@@ -25,4 +25,4 @@ COPY --from=builder /app/packages ./packages
 COPY services/api/package.json ./
 
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma db push --schema=packages/database/schema.prisma --accept-data-loss && node_modules/.bin/tsx packages/database/seed.ts; node dist/index.js"]
+CMD ["sh", "-c", "node_modules/.bin/prisma db push --schema=packages/database/schema.prisma --accept-data-loss && node_modules/.bin/tsx packages/database/seed.ts; node dist/index.js"]
