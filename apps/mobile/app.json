@@ -7,6 +7,12 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/e81e40bf-bf54-4b2d-b252-deb795b2d787"
+    },
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -28,7 +34,14 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-font"
-    ]
+      "expo-font",
+      "expo-updates"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "e81e40bf-bf54-4b2d-b252-deb795b2d787"
+      }
+    },
+    "owner": "itaytay40s-organization"
   }
 }
