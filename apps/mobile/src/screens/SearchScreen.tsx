@@ -52,24 +52,19 @@ export function SearchScreen() {
     setLoading(true)
     try {
       const params: Record<string, string | number> = { limit: 20 }
-      if (searchQuery.trim().length >= 2) {
-        params.make = searchQuery.trim()
-      }
+      if (searchQuery.trim().length >= 2) params.make = searchQuery.trim()
+
       const data = await api.getListings(params) as any
       let rows: ReturnType<typeof toCard>[] = (data.listings ?? []).map(toCard)
 
-      // Client-side fallback: if make search returned nothing, filter locally
       if (rows.length === 0 && searchQuery.trim().length >= 2) {
         const all = await api.getListings({ limit: 50 }) as any
-        rows = (all.listings ?? []).map(toCard).filter((l: ReturnType<typeof toCard>) => {
-          const q = searchQuery.toLowerCase()
-          return (
-            l.make.toLowerCase().includes(q) ||
-            l.model.toLowerCase().includes(q) ||
-            (l.city ?? '').toLowerCase().includes(q) ||
-            l.source.toLowerCase().includes(q)
-          )
-        })
+        const q = searchQuery.toLowerCase()
+        rows = (all.listings ?? []).map(toCard).filter((l: ReturnType<typeof toCard>) =>
+          l.make.toLowerCase().includes(q) ||
+          l.model.toLowerCase().includes(q) ||
+          (l.city ?? '').toLowerCase().includes(q)
+        )
         setTotal(rows.length)
       } else {
         setTotal(data.total ?? rows.length)
@@ -96,62 +91,70 @@ export function SearchScreen() {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor={colors.bg0} />
-      <ScrollView style={s.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <View style={s.pad}>
-          <Text style={s.title}>חיפוש</Text>
 
-          {/* Search input */}
-          <View style={s.searchBar}>
-            <Ionicons name="search-outline" size={17} color={colors.fg3} style={{ marginEnd: 8 }} />
-            <TextInput
-              style={s.searchInput}
-              placeholder="יצרן, דגם, עיר..."
-              placeholderTextColor={colors.fg4}
-              value={query}
-              onChangeText={setQuery}
-              textAlign="right"
-              autoCorrect={false}
-            />
-            {query.length > 0 && (
-              <TouchableOpacity onPress={() => setQuery('')}>
-                <Ionicons name="close-circle" size={17} color={colors.fg3} />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Sort chips */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.sortRow}>
-            {SORT_OPTIONS.map(opt => (
-              <TouchableOpacity
-                key={opt.key}
-                style={[s.sortChip, opt.key === sort && s.sortChipActive]}
-                onPress={() => setSort(opt.key)}
-                activeOpacity={0.7}
-              >
-                <Text style={[s.sortChipText, opt.key === sort && s.sortChipTextActive]}>{opt.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          <Text style={s.resultsLabel}>
-            {loading ? 'מחפש...' : `${total.toLocaleString('he-IL')} תוצאות`}
-          </Text>
+      {/* Sticky search header */}
+      <View style={s.topBar}>
+        <View style={s.searchBar}>
+          <Ionicons name="search-outline" size={16} color={colors.fg3} style={{ marginEnd: 8 }} />
+          <TextInput
+            style={s.searchInput}
+            placeholder="Toyota, Kia, חיפה..."
+            placeholderTextColor={colors.fg4}
+            value={query}
+            onChangeText={setQuery}
+            textAlign="right"
+            autoCorrect={false}
+            returnKeyType="search"
+          />
+          {query.length > 0 && (
+            <TouchableOpacity onPress={() => setQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close-circle" size={16} color={colors.fg3} />
+            </TouchableOpacity>
+          )}
         </View>
 
+        {/* Sort row */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.sortRow}
+        >
+          {SORT_OPTIONS.map(opt => (
+            <TouchableOpacity
+              key={opt.key}
+              style={[s.sortChip, opt.key === sort && s.sortChipActive]}
+              onPress={() => setSort(opt.key)}
+              activeOpacity={0.75}
+            >
+              <Text style={[s.sortChipText, opt.key === sort && s.sortChipTextActive]}>{opt.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* Result count */}
+        {!loading && (
+          <Text style={s.count}>
+            {total > 0 ? `${total.toLocaleString('he-IL')} תוצאות` : query.length > 0 ? 'אין תוצאות' : 'כל המודעות'}
+          </Text>
+        )}
+      </View>
+
+      <ScrollView style={s.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={s.pad}>
           {loading ? (
-            <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 40 }} />
+            <View style={s.loadingWrap}>
+              <ActivityIndicator size="large" color={colors.accent} />
+            </View>
           ) : listings.length === 0 ? (
             <View style={s.emptyWrap}>
               <Ionicons name="search-outline" size={48} color={colors.fg4} />
-              <Text style={s.emptyText}>לא נמצאו תוצאות</Text>
-              <Text style={s.emptyHint}>נסה לחפש לפי יצרן: Toyota, Kia, Hyundai</Text>
+              <Text style={s.emptyTitle}>לא נמצאו רכבים</Text>
+              <Text style={s.emptyHint}>נסה לחפש לפי שם היצרן באנגלית{'\n'}לדוגמה: Toyota, Kia, Hyundai</Text>
             </View>
           ) : (
             listings.map(l => <ListingCard key={l.id} listing={l} />)
           )}
         </View>
-
         <View style={{ height: 80 }} />
       </ScrollView>
     </SafeAreaView>
@@ -163,30 +166,50 @@ const s = StyleSheet.create({
   scroll: { flex: 1 },
   pad: { paddingHorizontal: spacing[4] },
 
-  title: {
-    color: colors.fg1, fontSize: fontSize.display2,
-    fontWeight: fontWeight.bold, marginTop: spacing[4], textAlign: 'right', marginBottom: spacing[3],
+  topBar: {
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[3],
+    paddingBottom: spacing[2],
+    borderBottomWidth: 0.5,
+    borderBottomColor: colors.border1,
   },
-
   searchBar: {
-    flexDirection: 'row-reverse', alignItems: 'center',
-    backgroundColor: colors.bg1, borderRadius: radii.md,
-    paddingHorizontal: spacing[4], height: 46, marginBottom: spacing[3],
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    backgroundColor: colors.bg1,
+    borderRadius: radii.md,
+    borderWidth: 0.5,
+    borderColor: colors.border2,
+    paddingHorizontal: spacing[4],
+    height: 46,
+    marginBottom: spacing[3],
   },
   searchInput: { flex: 1, color: colors.fg1, fontSize: fontSize.body },
 
-  sortRow: { gap: spacing[2], paddingBottom: spacing[3], flexDirection: 'row-reverse' },
+  sortRow: {
+    gap: spacing[2],
+    paddingBottom: spacing[3],
+    flexDirection: 'row-reverse',
+  },
   sortChip: {
-    height: 30, paddingHorizontal: 12, borderRadius: radii.pill,
-    backgroundColor: colors.bg1, alignItems: 'center', justifyContent: 'center',
+    height: 28, paddingHorizontal: 12,
+    borderRadius: radii.pill,
+    backgroundColor: colors.bg2,
+    alignItems: 'center', justifyContent: 'center',
   },
   sortChipActive: { backgroundColor: colors.accent },
-  sortChipText: { color: colors.fg3, fontSize: 12, fontWeight: fontWeight.medium },
+  sortChipText: { color: colors.fg3, fontSize: 11, fontWeight: fontWeight.medium },
   sortChipTextActive: { color: '#fff', fontWeight: fontWeight.semibold },
 
-  resultsLabel: { color: colors.fg3, fontSize: fontSize.caption, textAlign: 'right', marginBottom: spacing[3] },
+  count: {
+    color: colors.fg3,
+    fontSize: fontSize.caption,
+    textAlign: 'right',
+    paddingBottom: spacing[2],
+  },
 
-  emptyWrap: { alignItems: 'center', marginTop: 60, gap: 12 },
-  emptyText: { color: colors.fg2, fontSize: fontSize.body, fontWeight: fontWeight.medium },
-  emptyHint: { color: colors.fg3, fontSize: fontSize.caption, textAlign: 'center' },
+  loadingWrap: { paddingVertical: 56, alignItems: 'center' },
+  emptyWrap: { alignItems: 'center', paddingVertical: 64, gap: 12 },
+  emptyTitle: { color: colors.fg2, fontSize: fontSize.body, fontWeight: fontWeight.semibold },
+  emptyHint: { color: colors.fg3, fontSize: fontSize.caption, textAlign: 'center', lineHeight: 18 },
 })
