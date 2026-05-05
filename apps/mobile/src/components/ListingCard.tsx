@@ -2,7 +2,8 @@ import React, { useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
-import { colors, radii, spacing, fontSize, fontWeight } from '../theme/tokens'
+import { colors, radii, spacing, fontSize } from '../theme/tokens'
+import { fonts } from '../theme/typography'
 
 interface Listing {
   id: string
@@ -163,7 +164,7 @@ const s = StyleSheet.create({
   },
   sourceText: {
     fontSize: 10, color: 'rgba(255,255,255,0.78)',
-    fontWeight: fontWeight.medium, letterSpacing: 0.3,
+    fontFamily: fonts.medium, letterSpacing: 0.3,
   },
 
   imgBottom: {
@@ -175,7 +176,7 @@ const s = StyleSheet.create({
   metaLine: {
     color: 'rgba(255,255,255,0.72)',
     fontSize: 11,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.medium,
     letterSpacing: 0.1,
     textAlign: 'right',
     flex: 1,
@@ -196,20 +197,20 @@ const s = StyleSheet.create({
   carName: {
     color: colors.fg1,
     fontSize: fontSize.title,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fonts.semibold,
     flex: 1,
     textAlign: 'right',
   },
   priceTag: {
     fontSize: fontSize.micro,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.medium,
     letterSpacing: 0.3,
     marginStart: spacing[3],
   },
   price: {
     color: colors.fg1,
     fontSize: 23,
-    fontWeight: fontWeight.bold,
+    fontFamily: fonts.bold,
     textAlign: 'right',
     letterSpacing: -0.5,
   },

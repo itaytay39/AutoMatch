@@ -4,11 +4,23 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import * as Notifications from 'expo-notifications'
+import * as SplashScreen from 'expo-splash-screen'
+import {
+  useFonts,
+  Rubik_300Light,
+  Rubik_400Regular,
+  Rubik_500Medium,
+  Rubik_600SemiBold,
+  Rubik_700Bold,
+} from '@expo-google-fonts/rubik'
 import { HomeScreen } from './src/screens/HomeScreen'
 import { SearchScreen } from './src/screens/SearchScreen'
 import { AlertsScreen } from './src/screens/AlertsScreen'
 import { colors } from './src/theme/tokens'
+import { fonts } from './src/theme/typography'
 import { addNotificationListener, addResponseListener } from './src/services/pushNotifications'
+
+SplashScreen.preventAutoHideAsync()
 
 const Tab = createBottomTabNavigator()
 
@@ -42,7 +54,7 @@ function AppTabs() {
           },
           tabBarActiveTintColor: colors.accent,
           tabBarInactiveTintColor: colors.fg3,
-          tabBarLabelStyle: { fontSize: 10, fontWeight: '500', marginTop: 2 },
+          tabBarLabelStyle: { fontFamily: fonts.medium, fontSize: 10, marginTop: 2 },
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? tab.iconActive : tab.icon} size={22} color={color} />
           ),
@@ -57,8 +69,20 @@ function AppTabs() {
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    Rubik_300Light,
+    Rubik_400Regular,
+    Rubik_500Medium,
+    Rubik_600SemiBold,
+    Rubik_700Bold,
+  })
+
   const notifListener = useRef<Notifications.EventSubscription | null>(null)
   const responseListener = useRef<Notifications.EventSubscription | null>(null)
+
+  useEffect(() => {
+    if (fontsLoaded) SplashScreen.hideAsync()
+  }, [fontsLoaded])
 
   useEffect(() => {
     notifListener.current = addNotificationListener(notification => {
@@ -73,6 +97,8 @@ export default function App() {
       responseListener.current?.remove()
     }
   }, [])
+
+  if (!fontsLoaded) return null
 
   return (
     <SafeAreaProvider>

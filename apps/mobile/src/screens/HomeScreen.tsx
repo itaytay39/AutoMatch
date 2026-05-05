@@ -6,7 +6,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { ListingCard } from '../components/ListingCard'
-import { colors, spacing, fontSize, fontWeight, radii } from '../theme/tokens'
+import { colors, spacing, fontSize, radii } from '../theme/tokens'
+import { fonts } from '../theme/typography'
 import { api } from '../services/api'
 
 interface ApiListing {
@@ -123,7 +124,7 @@ const s = StyleSheet.create({
   brand: {
     color: colors.fg1,
     fontSize: 24,
-    fontWeight: fontWeight.bold,
+    fontFamily: fonts.bold,
     textAlign: 'right',
     letterSpacing: -0.5,
   },
@@ -148,11 +149,11 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: spacing[3],
   },
-  sectionTitle: { color: colors.fg1, fontSize: fontSize.headline, fontWeight: fontWeight.bold },
-  seeAll: { color: colors.accent, fontSize: fontSize.caption, fontWeight: fontWeight.medium },
+  sectionTitle: { color: colors.fg1, fontSize: fontSize.headline, fontFamily: fonts.bold },
+  seeAll: { color: colors.accent, fontSize: fontSize.caption, fontFamily: fonts.medium },
 
   loadingWrap: { paddingVertical: 48, alignItems: 'center' },
   emptyWrap: { alignItems: 'center', paddingVertical: 56, gap: 10 },
-  emptyText: { color: colors.fg2, fontSize: fontSize.body, fontWeight: fontWeight.medium },
+  emptyText: { color: colors.fg2, fontSize: fontSize.body, fontFamily: fonts.medium },
   emptyHint: { color: colors.fg3, fontSize: fontSize.caption },
 })

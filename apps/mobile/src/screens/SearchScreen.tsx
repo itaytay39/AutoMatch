@@ -6,7 +6,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { ListingCard } from '../components/ListingCard'
-import { colors, spacing, fontSize, fontWeight, radii } from '../theme/tokens'
+import { colors, spacing, fontSize, radii } from '../theme/tokens'
+import { fonts } from '../theme/typography'
 import { api } from '../services/api'
 
 interface ApiListing {
@@ -198,8 +199,8 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   sortChipActive: { backgroundColor: colors.accent },
-  sortChipText: { color: colors.fg3, fontSize: 11, fontWeight: fontWeight.medium },
-  sortChipTextActive: { color: '#fff', fontWeight: fontWeight.semibold },
+  sortChipText: { color: colors.fg3, fontSize: 11, fontFamily: fonts.medium },
+  sortChipTextActive: { color: '#fff', fontFamily: fonts.semibold },
 
   count: {
     color: colors.fg3,
@@ -210,6 +211,6 @@ const s = StyleSheet.create({
 
   loadingWrap: { paddingVertical: 56, alignItems: 'center' },
   emptyWrap: { alignItems: 'center', paddingVertical: 64, gap: 12 },
-  emptyTitle: { color: colors.fg2, fontSize: fontSize.body, fontWeight: fontWeight.semibold },
+  emptyTitle: { color: colors.fg2, fontSize: fontSize.body, fontFamily: fonts.semibold },
   emptyHint: { color: colors.fg3, fontSize: fontSize.caption, textAlign: 'center', lineHeight: 18 },
 })

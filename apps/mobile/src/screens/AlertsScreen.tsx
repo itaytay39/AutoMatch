@@ -5,7 +5,8 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { colors, spacing, fontSize, fontWeight, radii } from '../theme/tokens'
+import { colors, spacing, fontSize, radii } from '../theme/tokens'
+import { fonts } from '../theme/typography'
 
 interface Alert {
   id: string
@@ -178,7 +179,7 @@ const s = StyleSheet.create({
     marginTop: spacing[5],
     marginBottom: spacing[1],
   },
-  title: { color: colors.fg1, fontSize: 24, fontWeight: fontWeight.bold, letterSpacing: -0.3 },
+  title: { color: colors.fg1, fontSize: 24, fontFamily: fonts.bold, letterSpacing: -0.3 },
   countBadge: {
     backgroundColor: colors.accentSoft,
     borderRadius: radii.pill,
@@ -186,7 +187,7 @@ const s = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: colors.accent,
   },
-  countText: { color: colors.accent, fontSize: fontSize.micro, fontWeight: fontWeight.bold },
+  countText: { color: colors.accent, fontSize: fontSize.micro, fontFamily: fonts.bold },
   sub: { color: colors.fg3, fontSize: fontSize.caption, textAlign: 'right', marginBottom: spacing[5] },
 
   alertCard: {
@@ -212,7 +213,7 @@ const s = StyleSheet.create({
     flex: 1,
     color: colors.fg1,
     fontSize: fontSize.title,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fonts.semibold,
     textAlign: 'right',
   },
   deleteBtn: {
@@ -243,7 +244,7 @@ const s = StyleSheet.create({
   formTitle: {
     color: colors.fg1,
     fontSize: fontSize.title,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fonts.semibold,
     textAlign: 'right',
     marginBottom: spacing[4],
   },
@@ -270,7 +271,7 @@ const s = StyleSheet.create({
     borderRadius: radii.md,
     alignItems: 'center', justifyContent: 'center',
   },
-  saveBtnText: { color: '#fff', fontWeight: fontWeight.semibold, fontSize: fontSize.body },
+  saveBtnText: { color: '#fff', fontFamily: fonts.semibold, fontSize: fontSize.body },
   cancelBtn: {
     height: 46,
     paddingHorizontal: 20,
@@ -278,7 +279,7 @@ const s = StyleSheet.create({
     borderRadius: radii.md,
     alignItems: 'center', justifyContent: 'center',
   },
-  cancelText: { color: colors.fg2, fontWeight: fontWeight.medium, fontSize: fontSize.body },
+  cancelText: { color: colors.fg2, fontFamily: fonts.medium, fontSize: fontSize.body },
 
   // Add button — flat, not gradient
   addBtn: {
@@ -290,13 +291,13 @@ const s = StyleSheet.create({
     gap: 8,
     marginTop: spacing[3],
   },
-  addBtnText: { color: '#fff', fontWeight: fontWeight.semibold, fontSize: fontSize.body },
+  addBtnText: { color: '#fff', fontFamily: fonts.semibold, fontSize: fontSize.body },
 
   emptyState: {
     alignItems: 'center',
     paddingVertical: 56,
     gap: spacing[3],
   },
-  emptyTitle: { color: colors.fg2, fontSize: fontSize.headline, fontWeight: fontWeight.semibold },
+  emptyTitle: { color: colors.fg2, fontSize: fontSize.headline, fontFamily: fonts.semibold },
   emptySub: { color: colors.fg3, fontSize: fontSize.caption, textAlign: 'center', lineHeight: 20 },
 })
