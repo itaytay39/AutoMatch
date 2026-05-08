@@ -1,5 +1,11 @@
 import React, { useEffect, useRef } from 'react'
+import { I18nManager } from 'react-native'
 import { NavigationContainer } from '@react-navigation/native'
+
+// Force RTL layout globally — Hebrew app
+if (!I18nManager.isRTL) {
+  I18nManager.forceRTL(true)
+}
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'

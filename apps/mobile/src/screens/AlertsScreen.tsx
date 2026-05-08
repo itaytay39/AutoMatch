@@ -1,12 +1,14 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, TextInput,
+  StyleSheet, TextInput, ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, spacing, fontSize, radii } from '../theme/tokens'
 import { fonts } from '../theme/typography'
+import { api } from '../services/api'
+import { getDeviceId } from '../services/deviceId'
 
 interface Alert {
   id: string
@@ -17,11 +19,6 @@ interface Alert {
   maxKm?: number
   city?: string
 }
-
-const MOCK_ALERTS: Alert[] = [
-  { id: '1', make: 'Toyota', model: 'Corolla', yearMin: 2019, maxPrice: 140000, city: 'תל אביב' },
-  { id: '2', make: 'Kia', model: 'Stonic', yearMin: 2018, maxPrice: 100000, maxKm: 80000 },
-]
 
 const FIELDS: { key: keyof typeof EMPTY_FORM; label: string; numeric?: boolean }[] = [
   { key: 'make',     label: 'יצרן (Toyota, Kia...)' },
@@ -34,26 +31,57 @@ const FIELDS: { key: keyof typeof EMPTY_FORM; label: string; numeric?: boolean }
 const EMPTY_FORM = { make: '', model: '', maxPrice: '', maxKm: '', city: '' }
 
 export function AlertsScreen() {
-  const [alerts, setAlerts] = useState<Alert[]>(MOCK_ALERTS)
+  const [alerts, setAlerts] = useState<Alert[]>([])
+  const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
+  const [userId, setUserId] = useState<string | null>(null)
 
-  function addAlert() {
-    if (!form.make) return
-    setAlerts(prev => [...prev, {
-      id: Date.now().toString(),
-      make: form.make || undefined,
-      model: form.model || undefined,
-      maxPrice: form.maxPrice ? Number(form.maxPrice) : undefined,
-      maxKm: form.maxKm ? Number(form.maxKm) : undefined,
-      city: form.city || undefined,
-    }])
-    setForm(EMPTY_FORM)
-    setShowForm(false)
+  // Initialize device ID and load alerts
+  useEffect(() => {
+    getDeviceId().then(id => {
+      setUserId(id)
+      loadAlerts(id)
+    })
+  }, [])
+
+  const loadAlerts = useCallback(async (uid: string) => {
+    try {
+      const rows = await api.getAlerts(uid) as Alert[]
+      setAlerts(rows)
+    } catch (e) {
+      console.warn('Failed to load alerts:', e)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  async function addAlert() {
+    if (!form.make || !userId) return
+    try {
+      const created = await api.createAlert({
+        userId,
+        make: form.make || undefined,
+        model: form.model || undefined,
+        maxPrice: form.maxPrice ? Number(form.maxPrice) : undefined,
+        maxKm: form.maxKm ? Number(form.maxKm) : undefined,
+        city: form.city || undefined,
+      }) as Alert
+      setAlerts(prev => [...prev, created])
+      setForm(EMPTY_FORM)
+      setShowForm(false)
+    } catch (e) {
+      console.warn('Failed to create alert:', e)
+    }
   }
 
-  function deleteAlert(id: string) {
-    setAlerts(prev => prev.filter(a => a.id !== id))
+  async function deleteAlert(id: string) {
+    try {
+      await api.deleteAlert(id)
+      setAlerts(prev => prev.filter(a => a.id !== id))
+    } catch (e) {
+      console.warn('Failed to delete alert:', e)
+    }
   }
 
   return (
@@ -72,8 +100,15 @@ export function AlertsScreen() {
           </View>
           <Text style={s.sub}>קבל עדכון מיידי כשרכב תואם מתפרסם</Text>
 
+          {/* Loading state */}
+          {loading && (
+            <View style={s.loadingWrap}>
+              <ActivityIndicator size="small" color={colors.accent} />
+            </View>
+          )}
+
           {/* Alert cards */}
-          {alerts.map(alert => (
+          {!loading && alerts.map(alert => (
             <View key={alert.id} style={s.alertCard}>
               <View style={s.alertTop}>
                 <View style={s.alertIconWrap}>
@@ -154,7 +189,7 @@ export function AlertsScreen() {
           )}
 
           {/* Empty state */}
-          {alerts.length === 0 && !showForm && (
+          {!loading && alerts.length === 0 && !showForm && (
             <View style={s.emptyState}>
               <Ionicons name="notifications-off-outline" size={48} color={colors.fg4} />
               <Text style={s.emptyTitle}>אין התראות פעילות</Text>
@@ -189,6 +224,7 @@ const s = StyleSheet.create({
   },
   countText: { color: colors.accent, fontSize: fontSize.micro, fontFamily: fonts.bold },
   sub: { color: colors.fg3, fontSize: fontSize.caption, textAlign: 'right', marginBottom: spacing[5] },
+  loadingWrap: { paddingVertical: 32, alignItems: 'center' },
 
   alertCard: {
     backgroundColor: colors.bg1,
@@ -230,9 +266,8 @@ const s = StyleSheet.create({
     borderRadius: radii.pill,
     paddingHorizontal: 10, paddingVertical: 4,
   },
-  tagText: { color: colors.fg2, fontSize: fontSize.caption },
+  tagText: { color: colors.fg2, fontSize: fontSize.caption, fontFamily: fonts.regular },
 
-  // Form
   form: {
     backgroundColor: colors.bg1,
     borderRadius: radii.lg,
@@ -254,6 +289,7 @@ const s = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: colors.border2,
     color: colors.fg1,
+    fontFamily: fonts.regular,
     paddingHorizontal: spacing[4],
     height: 46,
     fontSize: fontSize.body,
@@ -265,23 +301,20 @@ const s = StyleSheet.create({
     marginTop: spacing[1],
   },
   saveBtn: {
-    flex: 1,
-    height: 46,
+    flex: 1, height: 46,
     backgroundColor: colors.accent,
     borderRadius: radii.md,
     alignItems: 'center', justifyContent: 'center',
   },
   saveBtnText: { color: '#fff', fontFamily: fonts.semibold, fontSize: fontSize.body },
   cancelBtn: {
-    height: 46,
-    paddingHorizontal: 20,
+    height: 46, paddingHorizontal: 20,
     backgroundColor: colors.bg2,
     borderRadius: radii.md,
     alignItems: 'center', justifyContent: 'center',
   },
   cancelText: { color: colors.fg2, fontFamily: fonts.medium, fontSize: fontSize.body },
 
-  // Add button — flat, not gradient
   addBtn: {
     height: 50,
     backgroundColor: colors.accent,

@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoMatch — מצא את הרכב המושלם</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0B0F14;
+    --card: #12171E;
+    --input: #18212A;
+    --primary: #5B88FF;
+    --accent: #BB5CF6;
+    --text: #FFFFFF;
+    --text-2: #C7CDD6;
+    --text-3: #8D95A3;
+    --border: rgba(255,255,255,0.07);
+    --sidebar-w: 240px;
+  }
+
+  html { font-family: 'Heebo', sans-serif; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    position: fixed;
+    right: 0;
+    top: 0;
+    width: var(--sidebar-w);
+    height: 100vh;
+    background: var(--card);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    overflow: hidden;
+  }
+
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .logo-icon svg { width: 20px; height: 20px; color: white; }
+
+  .logo-text {
+    font-size: 18px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.3px;
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-y: auto;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    color: var(--text-3);
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.18s ease;
+    position: relative;
+    user-select: none;
+  }
+
+  .nav-item:hover { color: var(--text-2); background: rgba(255,255,255,0.04); }
+
+  .nav-item.active {
+    color: var(--text);
+    background: rgba(91,136,255,0.12);
+  }
+
+  .nav-item.active::before {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 20%;
+    height: 60%;
+    width: 3px;
+    border-radius: 2px 0 0 2px;
+    background: linear-gradient(180deg, var(--primary), var(--accent));
+  }
+
+  .nav-item i { width: 18px; height: 18px; flex-shrink: 0; }
+
+  .sidebar-user {
+    padding: 16px 16px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .user-info { flex: 1; min-width: 0; }
+  .user-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .user-badge {
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 500;
+    margin-top: 1px;
+  }
+
+  /* ── MAIN ── */
+  .main {
+    margin-right: var(--sidebar-w);
+    min-height: 100vh;
+    padding: 0 0 40px;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(11,15,20,0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .search-wrap {
+    flex: 1;
+    position: relative;
+  }
+
+  .search-wrap .search-icon {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-3);
+    pointer-events: none;
+    width: 16px;
+    height: 16px;
+  }
+
+  .search-input {
+    width: 100%;
+    background: var(--input);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 42px 10px 16px;
+    font-family: 'Heebo', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.18s;
+  }
+
+  .search-input::placeholder { color: var(--text-3); }
+  .search-input:focus { border-color: rgba(91,136,255,0.5); }
+
+  .topbar-actions { display: flex; gap: 8px; }
+
+  .icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--input);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-3);
+    transition: all 0.18s;
+    flex-shrink: 0;
+  }
+
+  .icon-btn:hover { color: var(--text); background: rgba(255,255,255,0.08); }
+  .icon-btn i { width: 18px; height: 18px; }
+
+  /* ── CONTENT ── */
+  .content { padding: 28px 28px 0; }
+
+  /* ── HERO ── */
+  .hero {
+    border-radius: 20px;
+    background: linear-gradient(135deg, #0D1B2E 0%, #111726 50%, #160D24 100%);
+    border: 1px solid rgba(91,136,255,0.15);
+    padding: 36px 36px 36px 0;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 200px;
+    margin-bottom: 24px;
+  }
+
+  .hero-glow-blue {
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(91,136,255,0.18) 0%, transparent 70%);
+    top: -80px;
+    right: -60px;
+    pointer-events: none;
+  }
+
+  .hero-glow-purple {
+    position: absolute;
+    width: 250px;
+    height: 250px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(187,92,246,0.14) 0%, transparent 70%);
+    bottom: -60px;
+    left: 40%;
+    pointer-events: none;
+  }
+
+  .hero-text { position: relative; z-index: 2; flex: 1; padding-right: 36px; }
+
+  .hero-micro {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(91,136,255,0.14);
+    border: 1px solid rgba(91,136,255,0.25);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: var(--primary);
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+
+  .hero-micro i { width: 13px; height: 13px; }
+
+  .hero h1 {
+    font-size: 30px;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 10px;
+    letter-spacing: -0.5px;
+  }
+
+  .hero-sub {
+    font-size: 14px;
+    color: var(--text-2);
+    margin-bottom: 24px;
+    line-height: 1.6;
+  }
+
+  .hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: white;
+    color: #0B0F14;
+    font-family: 'Heebo', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 11px 22px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+
+  .hero-cta:hover { background: #e8eeff; transform: translateY(-1px); }
+  .hero-cta i { width: 15px; height: 15px; }
+
+  .hero-car {
+    position: relative;
+    z-index: 2;
+    flex-shrink: 0;
+    width: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.85;
+  }
+
+  /* ── STATS ROW ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    transition: transform 0.18s, box-shadow 0.18s;
+  }
+
+  .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-3);
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+    direction: ltr;
+    text-align: right;
+  }
+
+  .stat-change {
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .stat-change.up { color: #22C55E; }
+  .stat-change.down { color: #EF4444; }
+  .stat-change.neutral { color: var(--text-3); }
+  .stat-change i { width: 13px; height: 13px; }
+
+  /* ── FILTERS ── */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .filter-chip {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-family: 'Heebo', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--input);
+    color: var(--text-3);
+    transition: all 0.18s;
+    user-select: none;
+  }
+
+  .filter-chip:hover { color: var(--text-2); border-color: rgba(255,255,255,0.15); }
+
+  .filter-chip.active {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    border-color: transparent;
+    color: white;
+  }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+
+  .section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .see-all {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: gap 0.18s;
+  }
+
+  .see-all:hover { gap: 8px; }
+  .see-all i { width: 14px; height: 14px; }
+
+  /* ── CARS GRID ── */
+  .cars-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  /* ── CAR CARD ── */
+  .car-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    cursor: pointer;
+  }
+
+  .car-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 36px rgba(0,0,0,0.4);
+    border-color: rgba(91,136,255,0.2);
+  }
+
+  .car-photo {
+    position: relative;
+    aspect-ratio: 16/10;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .car-photo svg.silhouette {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 80%;
+    pointer-events: none;
+  }
+
+  .source-badge {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: white;
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    z-index: 2;
+    letter-spacing: 0.2px;
+  }
+
+  .heart-btn {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(18,23,30,0.65);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.18s;
+    z-index: 2;
+    color: var(--text-3);
+  }
+
+  .heart-btn:hover { background: rgba(239,68,68,0.2); color: #EF4444; border-color: rgba(239,68,68,0.3); }
+  .heart-btn.liked { color: #EF4444; background: rgba(239,68,68,0.18); border-color: rgba(239,68,68,0.3); }
+  .heart-btn i { width: 15px; height: 15px; }
+
+  .car-info { padding: 14px 14px 12px; }
+
+  .car-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .car-submeta {
+    font-size: 12px;
+    color: var(--text-3);
+    margin-bottom: 10px;
+    font-weight: 400;
+  }
+
+  .car-price-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .car-price {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text);
+    direction: ltr;
+    letter-spacing: -0.3px;
+  }
+
+  .price-pill {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+  }
+
+  .price-pill.good { background: rgba(34,197,94,0.14); color: #22C55E; }
+  .price-pill.fair { background: rgba(245,158,11,0.14); color: #F59E0B; }
+  .price-pill.expensive { background: rgba(239,68,68,0.14); color: #EF4444; }
+
+  .car-stats {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    color: var(--text-3);
+  }
+
+  .car-stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+  }
+
+  .car-stat i { width: 13px; height: 13px; color: var(--text-3); flex-shrink: 0; }
+
+  .sparkline { display: block; width: 100%; height: 40px; }
+
+  /* ── NO RESULTS ── */
+  .no-results {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-3);
+    font-size: 15px;
+  }
+
+  /* ── BOTTOM TAB BAR (mobile) ── */
+  .bottom-tabs {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(18,23,30,0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border);
+    z-index: 100;
+    padding: 8px 0 12px;
+  }
+
+  .tabs-row {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+  }
+
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    color: var(--text-3);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 10px;
+    transition: color 0.18s;
+    user-select: none;
+  }
+
+  .tab-item i { width: 22px; height: 22px; }
+  .tab-item.active { color: var(--primary); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 1100px) {
+    .cars-grid { grid-template-columns: repeat(2, 1fr); }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .bottom-tabs { display: block; }
+    .main { margin-right: 0; padding-bottom: 90px; }
+    .topbar { padding: 12px 16px; }
+    .content { padding: 20px 16px 0; }
+    .hero { padding: 24px 24px 24px 0; min-height: 160px; }
+    .hero h1 { font-size: 22px; }
+    .hero-car { width: 130px; }
+    .hero-car svg { width: 130px; height: 80px; }
+    .cars-grid { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .hero-glow-blue, .hero-glow-purple { display: none; }
+  }
+
+  @media (max-width: 480px) {
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .hero { flex-direction: column; padding: 24px 20px; }
+    .hero-car { display: none; }
+    .hero-text { padding-right: 0; }
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">
+      <i data-lucide="zap"></i>
+    </div>
+    <span class="logo-text">AutoMatch</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-item active" data-nav="home">
+      <i data-lucide="home"></i>
+      <span>ראשי</span>
+    </div>
+    <div class="nav-item" data-nav="search">
+      <i data-lucide="search"></i>
+      <span>חיפוש</span>
+    </div>
+    <div class="nav-item" data-nav="trends">
+      <i data-lucide="bar-chart-3"></i>
+      <span>מגמות</span>
+    </div>
+    <div class="nav-item" data-nav="compare">
+      <i data-lucide="arrow-left-right"></i>
+      <span>השוואה</span>
+    </div>
+    <div class="nav-item" data-nav="saved">
+      <i data-lucide="heart"></i>
+      <span>שמורים</span>
+    </div>
+    <div class="nav-item" data-nav="alerts">
+      <i data-lucide="bell"></i>
+      <span>התראות</span>
+    </div>
+    <div class="nav-item" data-nav="simulator">
+      <i data-lucide="calculator"></i>
+      <span>סימולטור</span>
+    </div>
+    <div class="nav-item" data-nav="settings">
+      <i data-lucide="settings"></i>
+      <span>הגדרות</span>
+    </div>
+  </nav>
+
+  <div class="sidebar-user">
+    <div class="user-avatar">י</div>
+    <div class="user-info">
+      <div class="user-name">יובל</div>
+      <div class="user-badge">חבר פרימיום ✦</div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="search-wrap">
+      <i data-lucide="search" class="search-icon"></i>
+      <input type="text" class="search-input" id="searchInput" placeholder="חפש רכב, דגם, יצרן..." autocomplete="off">
+    </div>
+    <div class="topbar-actions">
+      <div class="icon-btn"><i data-lucide="sliders-horizontal"></i></div>
+      <div class="icon-btn"><i data-lucide="bell"></i></div>
+      <div class="icon-btn"><i data-lucide="user-circle"></i></div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- HERO -->
+    <div class="hero">
+      <div class="hero-glow-blue"></div>
+      <div class="hero-glow-purple"></div>
+
+      <div class="hero-text">
+        <div class="hero-micro">
+          <i data-lucide="sparkles"></i>
+          המלצה אישית
+        </div>
+        <h1>מצא את הרכב<br>המושלם שלך</h1>
+        <p class="hero-sub">3 רכבים חדשים תואמים את החיפוש שלך · ירידה ממוצעת של ₪4,200 השבוע</p>
+        <button class="hero-cta">
+          צפה בכולם
+          <i data-lucide="arrow-left"></i>
+        </button>
+      </div>
+
+      <div class="hero-car">
+        <svg viewBox="0 0 240 140" width="220" height="120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="carGlow" cx="50%" cy="80%" r="55%">
+              <stop offset="0%" stop-color="#5B88FF" stop-opacity="0.25"/>
+              <stop offset="100%" stop-color="#5B88FF" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#3B5EA8" stop-opacity="0.9"/>
+              <stop offset="100%" stop-color="#1E3470" stop-opacity="0.7"/>
+            </linearGradient>
+            <linearGradient id="roofGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#5B88FF" stop-opacity="0.7"/>
+              <stop offset="100%" stop-color="#2A4A9A" stop-opacity="0.5"/>
+            </linearGradient>
+          </defs>
+          <!-- glow under car -->
+          <ellipse cx="120" cy="115" rx="90" ry="18" fill="url(#carGlow)"/>
+          <!-- body -->
+          <path d="M18,95 C18,85 28,78 42,78 L198,78 C212,78 222,85 222,95 L222,108 L18,108 Z" fill="url(#bodyGrad)"/>
+          <!-- roof/cabin -->
+          <path d="M62,78 C68,60 80,50 100,48 L145,48 C162,48 175,58 180,78 Z" fill="url(#roofGrad)"/>
+          <!-- windows -->
+          <path d="M70,75 C74,62 84,55 98,53 L122,53 L118,75 Z" fill="rgba(150,200,255,0.25)"/>
+          <path d="M124,53 L144,53 C156,55 165,63 170,75 L124,75 Z" fill="rgba(150,200,255,0.25)"/>
+          <!-- window divider -->
+          <line x1="121" y1="53" x2="119" y2="75" stroke="rgba(91,136,255,0.4)" stroke-width="1.5"/>
+          <!-- headlights -->
+          <rect x="20" y="90" width="22" height="8" rx="4" fill="rgba(255,240,100,0.6)"/>
+          <rect x="198" y="90" width="22" height="8" rx="4" fill="rgba(255,80,80,0.5)"/>
+          <!-- front grill -->
+          <rect x="22" y="99" width="18" height="5" rx="2" fill="rgba(91,136,255,0.3)"/>
+          <!-- wheel wells -->
+          <path d="M42,108 A26,20 0 0,0 94,108" fill="rgba(11,15,20,0.8)"/>
+          <path d="M146,108 A26,20 0 0,0 198,108" fill="rgba(11,15,20,0.8)"/>
+          <!-- wheels -->
+          <circle cx="68" cy="108" r="18" fill="#0D1520" stroke="rgba(91,136,255,0.5)" stroke-width="2"/>
+          <circle cx="68" cy="108" r="10" fill="#18212A" stroke="rgba(91,136,255,0.4)" stroke-width="1.5"/>
+          <circle cx="68" cy="108" r="4" fill="rgba(91,136,255,0.5)"/>
+          <circle cx="172" cy="108" r="18" fill="#0D1520" stroke="rgba(91,136,255,0.5)" stroke-width="2"/>
+          <circle cx="172" cy="108" r="10" fill="#18212A" stroke="rgba(91,136,255,0.4)" stroke-width="1.5"/>
+          <circle cx="172" cy="108" r="4" fill="rgba(91,136,255,0.5)"/>
+          <!-- door line -->
+          <line x1="119" y1="78" x2="117" y2="108" stroke="rgba(91,136,255,0.2)" stroke-width="1"/>
+          <!-- side mirror -->
+          <path d="M62,72 L55,68 L55,74 L62,74 Z" fill="rgba(91,136,255,0.5)"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">רכבים פעילים</div>
+        <div class="stat-value">12,847</div>
+        <span class="stat-change up"><i data-lucide="trending-up"></i>↑4.2%</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">מחיר ממוצע</div>
+        <div class="stat-value">₪142,300</div>
+        <span class="stat-change down"><i data-lucide="trending-down"></i>↓1.8%</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">ירידות מחיר היום</div>
+        <div class="stat-value">238</div>
+        <span class="stat-change up"><i data-lucide="trending-up"></i>↑12 היום</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">שמורים</div>
+        <div class="stat-value">17</div>
+        <span class="stat-change neutral">רכבים שמורים</span>
+      </div>
+    </div>
+
+    <!-- FILTER CHIPS -->
+    <div class="filter-bar">
+      <button class="filter-chip active" data-filter="all">הכל</button>
+      <button class="filter-chip" data-filter="hybrid">היברידי</button>
+      <button class="filter-chip" data-filter="electric">חשמלי</button>
+      <button class="filter-chip" data-filter="under150">עד ₪150K</button>
+      <button class="filter-chip" data-filter="year2020">2020+</button>
+    </div>
+
+    <!-- SECTION HEADER -->
+    <div class="section-header">
+      <h2 class="section-title">מומלצים עבורך</h2>
+      <div class="see-all">
+        ראה הכל
+        <i data-lucide="arrow-left"></i>
+      </div>
+    </div>
+
+    <!-- CARS GRID -->
+    <div class="cars-grid" id="carsGrid"></div>
+
+  </div>
+</main>
+
+<!-- BOTTOM TABS (mobile) -->
+<div class="bottom-tabs">
+  <div class="tabs-row">
+    <div class="tab-item active" data-tab="home">
+      <i data-lucide="home"></i>
+      <span>ראשי</span>
+    </div>
+    <div class="tab-item" data-tab="search">
+      <i data-lucide="search"></i>
+      <span>חיפוש</span>
+    </div>
+    <div class="tab-item" data-tab="saved">
+      <i data-lucide="heart"></i>
+      <span>שמורים</span>
+    </div>
+    <div class="tab-item" data-tab="alerts">
+      <i data-lucide="bell"></i>
+      <span>התראות</span>
+    </div>
+    <div class="tab-item" data-tab="settings">
+      <i data-lucide="settings"></i>
+      <span>הגדרות</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──
+const cars = [
+  {
+    id: 1,
+    name: "קיה סטוניק",
+    year: 2019,
+    km: "68,000",
+    price: 87500,
+    priceStr: "₪87,500",
+    city: "קריית ביאליק",
+    source: "yad2",
+    priceTag: "מחיר טוב",
+    priceType: "good",
+    fuel: "היברידי",
+    fuelType: "hybrid",
+    gradientA: "#1a2e1a",
+    gradientB: "#0e1f0e",
+    silhouetteColor: "#22C55E",
+    sparkType: "good"
+  },
+  {
+    id: 2,
+    name: "טויוטה קורולה הייבריד",
+    year: 2021,
+    km: "45,000",
+    price: 129900,
+    priceStr: "₪129,900",
+    city: "תל אביב",
+    source: "yad2",
+    priceTag: "מחיר טוב",
+    priceType: "good",
+    fuel: "היברידי",
+    fuelType: "hybrid",
+    gradientA: "#1a2a1a",
+    gradientB: "#0e1e12",
+    silhouetteColor: "#4ADE80",
+    sparkType: "good"
+  },
+  {
+    id: 3,
+    name: "יונדאי אייוניק 5",
+    year: 2023,
+    km: "22,500",
+    price: 189500,
+    priceStr: "₪189,500",
+    city: "חיפה",
+    source: "autoboom",
+    priceTag: "סביר",
+    priceType: "fair",
+    fuel: "חשמלי",
+    fuelType: "electric",
+    gradientA: "#1e1a2e",
+    gradientB: "#120e1f",
+    silhouetteColor: "#818CF8",
+    sparkType: "fair"
+  },
+  {
+    id: 4,
+    name: "מזדה 3",
+    year: 2020,
+    km: "52,000",
+    price: 112000,
+    priceStr: "₪112,000",
+    city: "ראשון לציון",
+    source: "autoboom",
+    priceTag: "סביר",
+    priceType: "fair",
+    fuel: "בנזין",
+    fuelType: "petrol",
+    gradientA: "#1e1a18",
+    gradientB: "#150f0e",
+    silhouetteColor: "#F59E0B",
+    sparkType: "fair"
+  },
+  {
+    id: 5,
+    name: "קיה סטוניק",
+    year: 2020,
+    km: "74,000",
+    price: 92000,
+    priceStr: "₪92,000",
+    city: "קריית מוצקין",
+    source: "yad2",
+    priceTag: "מחיר טוב",
+    priceType: "good",
+    fuel: "היברידי",
+    fuelType: "hybrid",
+    gradientA: "#1a2e20",
+    gradientB: "#0e1f14",
+    silhouetteColor: "#34D399",
+    sparkType: "good"
+  },
+  {
+    id: 6,
+    name: "סקודה אוקטביה",
+    year: 2019,
+    km: "120,000",
+    price: 98000,
+    priceStr: "₪98,000",
+    city: "פתח תקווה",
+    source: "homeless",
+    priceTag: "יקר ב-12%",
+    priceType: "expensive",
+    fuel: "בנזין",
+    fuelType: "petrol",
+    gradientA: "#2e1a1a",
+    gradientB: "#1f0e0e",
+    silhouetteColor: "#EF4444",
+    sparkType: "bad"
+  },
+  {
+    id: 7,
+    name: "טסלה מודל 3",
+    year: 2022,
+    km: "31,000",
+    price: 215000,
+    priceStr: "₪215,000",
+    city: "הרצליה",
+    source: "yad2",
+    priceTag: "סביר",
+    priceType: "fair",
+    fuel: "חשמלי",
+    fuelType: "electric",
+    gradientA: "#1a1e2e",
+    gradientB: "#0e1220",
+    silhouetteColor: "#60A5FA",
+    sparkType: "fair"
+  },
+  {
+    id: 8,
+    name: "פולקסווגן גולף",
+    year: 2020,
+    km: "61,000",
+    price: 105000,
+    priceStr: "₪105,000",
+    city: "רמת גן",
+    source: "focusnet",
+    priceTag: "סביר",
+    priceType: "fair",
+    fuel: "בנזין",
+    fuelType: "petrol",
+    gradientA: "#1e1a2a",
+    gradientB: "#140e1e",
+    silhouetteColor: "#A78BFA",
+    sparkType: "fair"
+  },
+  {
+    id: 9,
+    name: "קיה סטוניק",
+    year: 2019,
+    km: "55,000",
+    price: 84000,
+    priceStr: "₪84,000",
+    city: "קריית אתא",
+    source: "yad2",
+    priceTag: "מחיר טוב",
+    priceType: "good",
+    fuel: "היברידי",
+    fuelType: "hybrid",
+    gradientA: "#182a18",
+    gradientB: "#0c1c0c",
+    silhouetteColor: "#6EE7B7",
+    sparkType: "good"
+  },
+  {
+    id: 10,
+    name: "הונדה סיוויק",
+    year: 2021,
+    km: "38,000",
+    price: 118000,
+    priceStr: "₪118,000",
+    city: "באר שבע",
+    source: "carwiz",
+    priceTag: "מחיר טוב",
+    priceType: "good",
+    fuel: "בנזין",
+    fuelType: "petrol",
+    gradientA: "#1e251a",
+    gradientB: "#121a0e",
+    silhouetteColor: "#86EFAC",
+    sparkType: "good"
+  }
+];
+
+// ── SOURCE COLORS ──
+const sourceColors = {
+  yad2: "#ED2024",
+  autoboom: "#3B82F6",
+  homeless: "#22C55E",
+  focusnet: "#BB5CF6",
+  carwiz: "#F59E0B"
+};
+
+// ── SPARKLINE PATHS ──
+function getSparkPath(type, id) {
+  const w = 160, h = 40;
+  const goodPaths = [
+    "M0,12 C20,10 40,18 60,22 C80,26 100,28 130,30 C145,31 152,33 160,35",
+    "M0,8 C15,10 35,16 60,20 C85,25 110,28 140,32 C150,33 156,35 160,36",
+    "M0,10 C25,12 45,17 70,22 C95,27 120,30 145,33 C152,34 157,35 160,36",
+    "M0,6 C20,8 40,14 65,20 C90,26 120,30 148,34 C155,35 158,36 160,37",
+    "M0,11 C18,13 38,18 62,23 C88,28 115,31 142,34 C153,35 157,36 160,37",
+  ];
+  const fairPaths = [
+    "M0,20 C20,18 35,22 55,20 C75,18 95,22 115,20 C135,18 150,21 160,20",
+    "M0,22 C25,19 45,23 65,21 C85,19 105,23 125,21 C145,19 155,22 160,20",
+    "M0,18 C22,20 42,17 62,21 C82,19 102,22 122,20 C142,18 155,21 160,19",
+    "M0,21 C18,19 38,22 58,20 C78,18 98,21 118,20 C138,19 152,21 160,20",
+  ];
+  const badPaths = [
+    "M0,35 C20,32 40,28 60,24 C80,20 100,16 130,12 C145,10 152,8 160,6",
+    "M0,36 C15,33 35,29 60,25 C85,21 110,17 140,11 C150,9 156,7 160,5",
+  ];
+
+  let paths, color, fillId;
+  if (type === "good") {
+    paths = goodPaths;
+    color = "#22C55E";
+    fillId = `sg${id}`;
+  } else if (type === "fair") {
+    paths = fairPaths;
+    color = "#F59E0B";
+    fillId = `sf${id}`;
+  } else {
+    paths = badPaths;
+    color = "#EF4444";
+    fillId = `sb${id}`;
+  }
+
+  const path = paths[id % paths.length];
+  const lastPoint = path.match(/(\d+),(\d+)$/);
+  const endX = lastPoint ? lastPoint[1] : w;
+  const endY = lastPoint ? lastPoint[2] : h/2;
+
+  return `
+    <svg class="sparkline" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="${fillId}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${color}" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="${color}" stop-opacity="0.02"/>
+        </linearGradient>
+      </defs>
+      <path d="${path} L${endX},${h} L0,${h} Z" fill="url(#${fillId})"/>
+      <path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  `;
+}
+
+// ── CAR SILHOUETTE ──
+function getCarSVG(color) {
+  const opacity = 0.55;
+  return `
+    <svg class="silhouette" viewBox="0 0 200 90" xmlns="http://www.w3.org/2000/svg" fill="none">
+      <defs>
+        <linearGradient id="cg_${color.replace('#','')}" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="${color}" stop-opacity="${opacity + 0.1}"/>
+          <stop offset="100%" stop-color="${color}" stop-opacity="${opacity - 0.15}"/>
+        </linearGradient>
+      </defs>
+      <path d="M8,68 C8,58 18,52 32,52 L168,52 C182,52 192,58 192,68 L192,78 L8,78 Z" fill="url(#cg_${color.replace('#','')})"/>
+      <path d="M45,52 C50,38 60,30 75,28 L130,28 C145,28 155,36 158,52 Z" fill="${color}" fill-opacity="${opacity}"/>
+      <path d="M50,50 C54,40 62,34 74,32 L100,32 L97,50 Z" fill="rgba(255,255,255,0.12)"/>
+      <path d="M100,32 L128,32 C140,34 148,40 152,50 L100,50 Z" fill="rgba(255,255,255,0.10)"/>
+      <circle cx="55" cy="78" r="13" fill="#0B0F14" stroke="${color}" stroke-opacity="${opacity}" stroke-width="1.5"/>
+      <circle cx="55" cy="78" r="7" fill="#18212A" stroke="${color}" stroke-opacity="${opacity - 0.1}" stroke-width="1"/>
+      <circle cx="145" cy="78" r="13" fill="#0B0F14" stroke="${color}" stroke-opacity="${opacity}" stroke-width="1.5"/>
+      <circle cx="145" cy="78" r="7" fill="#18212A" stroke="${color}" stroke-opacity="${opacity - 0.1}" stroke-width="1"/>
+    </svg>
+  `;
+}
+
+// ── FUEL ICON ──
+function getFuelIcon(fuelType) {
+  if (fuelType === "electric") return "zap";
+  return "droplets";
+}
+
+// ── RENDER CARDS ──
+function renderCards(list) {
+  const grid = document.getElementById("carsGrid");
+  if (list.length === 0) {
+    grid.innerHTML = `<div class="no-results">לא נמצאו רכבים תואמים לחיפוש שלך</div>`;
+    return;
+  }
+
+  grid.innerHTML = list.map(car => `
+    <div class="car-card" data-id="${car.id}">
+      <div class="car-photo" style="background: linear-gradient(135deg, ${car.gradientA} 0%, ${car.gradientB} 100%);">
+        ${getCarSVG(car.silhouetteColor)}
+        <div class="source-badge" style="color: ${sourceColors[car.source]}">${car.source}</div>
+        <button class="heart-btn" data-heart="${car.id}" onclick="toggleHeart(this, event)">
+          <i data-lucide="heart"></i>
+        </button>
+      </div>
+      <div class="car-info">
+        <h3 class="car-name">${car.name}</h3>
+        <p class="car-submeta">${car.year} · יד שנייה · אוטומט</p>
+        <div class="car-price-row">
+          <span class="car-price">${car.priceStr}</span>
+          <span class="price-pill ${car.priceType}">${car.priceTag}</span>
+        </div>
+        <div class="car-stats">
+          <span class="car-stat"><i data-lucide="gauge"></i>${car.km} ק"מ</span>
+          <span class="car-stat"><i data-lucide="map-pin"></i>${car.city}</span>
+          <span class="car-stat"><i data-lucide="${getFuelIcon(car.fuelType)}"></i>${car.fuel}</span>
+        </div>
+        ${getSparkPath(car.sparkType, car.id)}
+      </div>
+    </div>
+  `).join("");
+
+  // Re-init lucide icons after DOM update
+  if (window.lucide) lucide.createIcons();
+}
+
+// ── HEART TOGGLE ──
+function toggleHeart(btn, e) {
+  e.stopPropagation();
+  btn.classList.toggle("liked");
+  const icon = btn.querySelector("i");
+  if (btn.classList.contains("liked")) {
+    icon.setAttribute("data-lucide", "heart");
+    icon.style.fill = "#EF4444";
+    icon.style.color = "#EF4444";
+  } else {
+    icon.setAttribute("data-lucide", "heart");
+    icon.style.fill = "none";
+    icon.style.color = "";
+  }
+}
+
+// ── FILTER STATE ──
+let activeFilter = "all";
+let searchQuery = "";
+
+function getFiltered() {
+  return cars.filter(car => {
+    // Filter chip
+    let passFilter = true;
+    if (activeFilter === "hybrid") passFilter = car.fuelType === "hybrid";
+    else if (activeFilter === "electric") passFilter = car.fuelType === "electric";
+    else if (activeFilter === "under150") passFilter = car.price <= 150000;
+    else if (activeFilter === "year2020") passFilter = car.year >= 2020;
+
+    // Search
+    let passSearch = true;
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      passSearch = car.name.toLowerCase().includes(q) || car.city.toLowerCase().includes(q);
+    }
+
+    return passFilter && passSearch;
+  });
+}
+
+// ── FILTER CHIPS ──
+document.querySelectorAll(".filter-chip").forEach(chip => {
+  chip.addEventListener("click", () => {
+    document.querySelectorAll(".filter-chip").forEach(c => c.classList.remove("active"));
+    chip.classList.add("active");
+    activeFilter = chip.dataset.filter;
+    renderCards(getFiltered());
+  });
+});
+
+// ── SEARCH ──
+document.getElementById("searchInput").addEventListener("input", e => {
+  searchQuery = e.target.value;
+  renderCards(getFiltered());
+});
+
+// ── NAV ITEMS ──
+document.querySelectorAll(".nav-item").forEach(item => {
+  item.addEventListener("click", () => {
+    document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+    item.classList.add("active");
+  });
+});
+
+// ── BOTTOM TABS ──
+document.querySelectorAll(".tab-item").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab-item").forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+  });
+});
+
+// ── INIT ──
+renderCards(cars);
+
+// Init lucide icons for static elements
+window.addEventListener("DOMContentLoaded", () => {
+  if (window.lucide) lucide.createIcons();
+});
+if (window.lucide) lucide.createIcons();
+</script>
+</body>
+</html>

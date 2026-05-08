@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications'
 import * as Device from 'expo-device'
+import Constants from 'expo-constants'
 import { Platform } from 'react-native'
 
 Notifications.setNotificationHandler({
@@ -13,6 +14,12 @@ Notifications.setNotificationHandler({
 })
 
 export async function registerForPushNotifications(): Promise<string | null> {
+  // Push tokens don't work in Expo Go from SDK 53+ — skip silently
+  if (Constants.appOwnership === 'expo') {
+    console.warn('Push notifications disabled in Expo Go (SDK 53+). Use a dev/prod build.')
+    return null
+  }
+
   if (!Device.isDevice) return null
 
   const { status: existingStatus } = await Notifications.getPermissionsAsync()
@@ -35,7 +42,8 @@ export async function registerForPushNotifications(): Promise<string | null> {
     })
   }
 
-  const token = await Notifications.getExpoPushTokenAsync()
+  const projectId = Constants.expoConfig?.extra?.eas?.projectId
+  const token = await Notifications.getExpoPushTokenAsync({ projectId })
   return token.data
 }
 

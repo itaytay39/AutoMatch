@@ -27,6 +27,9 @@ export const api = {
     yearMin?: number; yearMax?: number; maxPrice?: number; maxKm?: number; city?: string
   }) => req('/alerts', { method: 'POST', body: JSON.stringify(alert) }),
 
+  getAlerts: (userId: string) =>
+    req(`/alerts?userId=${encodeURIComponent(userId)}`),
+
   deleteAlert: (id: string) =>
     req(`/alerts/${id}`, { method: 'DELETE' }),
 }

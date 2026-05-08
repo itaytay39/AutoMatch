@@ -26,18 +26,22 @@ export function makeAxiosConnector(opts: {
       const listings: Listing[] = []
 
       for (const item of opts.parseItems($)) {
-        if (!item.id || !item.price) continue
-        const [make, ...modelParts] = item.title.split(' ')
+        if (!item.id?.trim() || !item.price?.trim() || !item.title?.trim()) continue
+        const price = normalizePrice(item.price)
+        const year = normalizeYear(item.year)
+        if (!price || !year) continue
+        const [make, ...modelParts] = item.title.trim().split(' ')
+        if (!make) continue
         listings.push({
-          externalId: item.id,
+          externalId: item.id.trim(),
           source: opts.name,
-          url: item.href.startsWith('http') ? item.href : opts.baseUrl + item.href,
-          title: item.title,
+          url: item.href?.startsWith('http') ? item.href : opts.baseUrl + (item.href ?? ''),
+          title: item.title.trim(),
           make: normalizeMake(make),
           model: modelParts.join(' '),
-          year: normalizeYear(item.year),
+          year,
           mileage: normalizeMileage(item.km),
-          price: normalizePrice(item.price),
+          price,
           city: normalizeCity(item.city),
           images: item.img ? [item.img] : [],
         })
