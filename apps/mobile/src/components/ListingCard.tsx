@@ -1,11 +1,12 @@
-import React, { useState } from 'react'
+import React, { useCallback } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, radii, spacing, fontSize } from '../theme/tokens'
 import { fonts } from '../theme/typography'
+import { toggleSaved, useSaved } from '../store/savedStore'
 
-interface Listing {
+export interface ListingCardData {
   id: string
   make: string
   model: string
@@ -23,34 +24,44 @@ interface Listing {
 }
 
 interface Props {
-  listing: Listing
+  listing: ListingCardData
   onPress?: () => void
 }
 
-const PRICE_LABEL: Record<string, { color: string; label: string }> = {
-  good:      { color: colors.success, label: 'מחיר טוב' },
-  fair:      { color: colors.fg3,     label: 'מחיר שוק' },
-  expensive: { color: colors.danger,  label: 'יקר יחסית' },
+const PRICE_CONFIG: Record<string, { color: string; bg: string; label: string }> = {
+  good:      { color: '#34D399', bg: '#0D2E1A', label: 'מחיר טוב' },
+  fair:      { color: colors.fg3, bg: colors.bg2, label: 'מחיר שוק' },
+  expensive: { color: '#F87171', bg: '#2A0D0D', label: 'יקר יחסית' },
+}
+
+const DEAL_DOTS: Record<string, string> = {
+  great: '#34D399', good: '#6EE7B7', fair: colors.fg3, suspicious: colors.warning,
 }
 
 export function ListingCard({ listing, onPress }: Props) {
-  const [saved, setSaved] = useState(false)
-  const pill = PRICE_LABEL[listing.priceLabel ?? 'fair']
+  const saved = useSaved()
+  const isSaved = saved.has(listing.id)
+
+  const handleSave = useCallback((_e: unknown) => {
+    e.stopPropagation?.()
+    toggleSaved(listing.id)
+  }, [listing.id])
+
+  const pill = PRICE_CONFIG[listing.priceLabel ?? 'fair']
+  const dealDot = DEAL_DOTS[listing.dealScore ?? 'fair']
   const price = listing.price.toLocaleString('he-IL')
   const suspicious = listing.odometerSuspicious || listing.dealScore === 'suspicious'
 
-  // Single meta line: 2021  ·  45,000 ק״מ  ·  תל אביב
   const metaParts = [
     listing.year?.toString(),
     listing.mileage ? `${listing.mileage.toLocaleString('he-IL')} ק״מ` : null,
     listing.city,
   ].filter(Boolean)
-  const metaLine = metaParts.join('  ·  ')
 
   return (
-    <TouchableOpacity style={s.card} onPress={onPress} activeOpacity={0.92}>
+    <TouchableOpacity style={s.card} onPress={onPress} activeOpacity={0.93}>
 
-      {/* ── Image with overlay ── */}
+      {/* ── Image ── */}
       <View style={s.imageWrap}>
         {listing.imageUrl ? (
           <Image
@@ -60,53 +71,68 @@ export function ListingCard({ listing, onPress }: Props) {
           />
         ) : (
           <View style={s.imgFallback}>
-            <Ionicons name="car-sport-outline" size={48} color={colors.fg4} />
+            <Ionicons name="car-sport-outline" size={44} color={colors.fg4} />
           </View>
         )}
 
-        {/* Real gradient scrim — image text legibility */}
         <LinearGradient
-          colors={['transparent', 'rgba(6,8,11,0.88)']}
+          colors={['transparent', 'rgba(6,8,11,0.92)']}
           style={s.scrim}
         />
 
-        {/* Top: fav (physical left) | source badge (physical right) */}
+        {/* Top overlay */}
         <View style={s.imgTop}>
           <TouchableOpacity
-            style={[s.favBtn, saved && s.favBtnSaved]}
-            onPress={() => setSaved(v => !v)}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={[s.favBtn, isSaved && s.favBtnSaved]}
+            onPress={handleSave}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons
-              name={saved ? 'heart' : 'heart-outline'}
+              name={isSaved ? 'heart' : 'heart-outline'}
               size={14}
-              color={saved ? colors.danger : 'rgba(255,255,255,0.80)'}
+              color={isSaved ? colors.danger : 'rgba(255,255,255,0.85)'}
             />
           </TouchableOpacity>
-          <View style={s.sourceBadge}>
+          <View style={s.sourcePill}>
             <Text style={s.sourceText}>{listing.source}</Text>
           </View>
         </View>
 
-        {/* Bottom: year · km · city — rendered ON the gradient */}
+        {/* Bottom overlay — meta info */}
         <View style={s.imgBottom}>
           {suspicious && (
-            <Ionicons name="warning-outline" size={12} color={colors.warning} style={{ marginEnd: 5 }} />
+            <Ionicons name="warning" size={12} color={colors.warning} style={{ marginEnd: 4 }} />
           )}
-          <Text style={s.metaLine} numberOfLines={1}>{metaLine}</Text>
+          <Text style={s.metaLine} numberOfLines={1}>
+            {metaParts.join('  ·  ')}
+          </Text>
         </View>
       </View>
 
-      {/* ── Info — intentionally minimal ── */}
+      {/* ── Info ── */}
       <View style={s.info}>
-        {/* Car name (right, RTL) + price label (left) */}
-        <View style={s.titleRow}>
-          <Text style={[s.priceTag, { color: pill.color }]}>{pill.label}</Text>
+        {/* Name row */}
+        <View style={s.nameRow}>
           <Text style={s.carName} numberOfLines={1}>{listing.make} {listing.model}</Text>
+          {/* Deal quality dot */}
+          <View style={[s.dealDot, { backgroundColor: dealDot }]} />
         </View>
 
-        {/* Price — the hero number */}
-        <Text style={[s.price, suspicious && s.priceWarn]}>₪{price}</Text>
+        {/* Price row — price + label pill */}
+        <View style={s.priceRow}>
+          <View style={[s.pricePill, { backgroundColor: pill.bg }]}>
+            <Text style={[s.pillText, { color: pill.color }]}>{pill.label}</Text>
+          </View>
+          <Text style={[s.price, suspicious && { color: colors.warning }]}>₪{price}</Text>
+        </View>
+
+        {/* Red flag count if any */}
+        {listing.redFlags && listing.redFlags.length > 0 && (
+          <View style={s.flagsHint}>
+            <Ionicons name="alert-circle-outline" size={11} color={colors.warning} />
+            <Text style={s.flagsText}>{listing.redFlags.length} אזהרות · לחץ לפרטים</Text>
+          </View>
+        )}
       </View>
 
     </TouchableOpacity>
@@ -116,105 +142,78 @@ export function ListingCard({ listing, onPress }: Props) {
 const s = StyleSheet.create({
   card: {
     backgroundColor: colors.bg1,
-    borderRadius: radii.lg,
+    borderRadius: radii.xl,
     overflow: 'hidden',
     marginBottom: spacing[3],
+    borderWidth: 0.5,
+    borderColor: colors.border2,
   },
 
-  // Image
-  imageWrap: {
-    aspectRatio: 16 / 9,
-    backgroundColor: colors.bg2,
-  },
-  imgFallback: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scrim: {
-    position: 'absolute',
-    bottom: 0, left: 0, right: 0,
-    height: '65%',
-  },
+  imageWrap: { aspectRatio: 16 / 9, backgroundColor: colors.bg2 },
+  imgFallback: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  scrim: { position: 'absolute', bottom: 0, left: 0, right: 0, height: '60%' },
 
   imgTop: {
-    position: 'absolute',
-    top: 10, left: 10, right: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    position: 'absolute', top: 10, left: 10, right: 10,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
   },
   favBtn: {
-    width: 30, height: 30, borderRadius: 15,
-    backgroundColor: 'rgba(0,0,0,0.40)',
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.45)',
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.12)',
   },
   favBtnSaved: {
-    backgroundColor: 'rgba(220,38,38,0.22)',
-    borderColor: 'rgba(220,38,38,0.35)',
+    backgroundColor: 'rgba(220,38,38,0.25)',
+    borderColor: 'rgba(220,38,38,0.45)',
   },
-  sourceBadge: {
-    backgroundColor: 'rgba(0,0,0,0.45)',
+  sourcePill: {
+    backgroundColor: 'rgba(0,0,0,0.48)',
     borderRadius: radii.pill,
     paddingHorizontal: 9, paddingVertical: 3,
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.12)',
   },
-  sourceText: {
-    fontSize: 10, color: 'rgba(255,255,255,0.78)',
-    fontFamily: fonts.medium, letterSpacing: 0.3,
-  },
+  sourceText: { fontSize: 10, color: 'rgba(255,255,255,0.80)', fontFamily: fonts.medium },
 
   imgBottom: {
-    position: 'absolute',
-    bottom: 10, left: 12, right: 12,
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
+    position: 'absolute', bottom: 10, left: 12, right: 12,
+    flexDirection: 'row-reverse', alignItems: 'center',
   },
   metaLine: {
-    color: 'rgba(255,255,255,0.72)',
-    fontSize: 11,
-    fontFamily: fonts.medium,
-    letterSpacing: 0.1,
-    textAlign: 'right',
-    flex: 1,
+    color: 'rgba(255,255,255,0.75)', fontSize: 11,
+    fontFamily: fonts.medium, letterSpacing: 0.1, textAlign: 'right', flex: 1,
   },
 
-  // Info section
   info: {
     paddingHorizontal: spacing[4],
     paddingTop: spacing[3],
     paddingBottom: spacing[4],
   },
-  titleRow: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 5,
+  nameRow: {
+    flexDirection: 'row-reverse', alignItems: 'center',
+    justifyContent: 'space-between', marginBottom: 5,
   },
   carName: {
-    color: colors.fg1,
-    fontSize: fontSize.title,
-    fontFamily: fonts.semibold,
-    flex: 1,
-    textAlign: 'right',
+    color: colors.fg1, fontSize: fontSize.title, fontFamily: fonts.semibold,
+    flex: 1, textAlign: 'right',
   },
-  priceTag: {
-    fontSize: fontSize.micro,
-    fontFamily: fonts.medium,
-    letterSpacing: 0.3,
-    marginStart: spacing[3],
+  dealDot: { width: 8, height: 8, borderRadius: 4, marginStart: spacing[2] },
+
+  priceRow: {
+    flexDirection: 'row-reverse', alignItems: 'center',
+    justifyContent: 'space-between',
   },
   price: {
-    color: colors.fg1,
-    fontSize: 23,
-    fontFamily: fonts.bold,
-    textAlign: 'right',
-    letterSpacing: -0.5,
+    color: colors.fg1, fontSize: 22, fontFamily: fonts.bold,
+    letterSpacing: -0.5, textAlign: 'right',
   },
-  priceWarn: {
-    color: colors.warning,
+  pricePill: {
+    borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4,
   },
+  pillText: { fontSize: 11, fontFamily: fonts.semibold },
+
+  flagsHint: {
+    flexDirection: 'row-reverse', alignItems: 'center', gap: 4, marginTop: spacing[2],
+  },
+  flagsText: { color: colors.warning, fontSize: 10, fontFamily: fonts.medium },
 })

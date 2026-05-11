@@ -1,6 +1,27 @@
 # AutoMatch — PROGRESS
 
-_עדכון אחרון: 2026-05-08_
+_עדכון אחרון: 2026-05-11_
+
+---
+
+## ✅ שלב 9 — DetailScreen + Navigation + Visual Overhaul
+
+**מה נעשה:**
+- `DetailScreen.tsx` — מסך פרטי רכב מלא: גלריית תמונות swipeable, מחיר גדול, chips לנתונים, MarketCompare, PriceHistoryChart, AnomalyBadge, ConditionBadge, דגלים אדומים, CTA פתח מודעה
+- `SavedScreen.tsx` — מסך "שמורים" עם AsyncStorage, כרטיסי רכב + empty state
+- `savedStore.ts` — global store עם AsyncStorage לשמירת רכבים (cross-screen sync)
+- `App.tsx` — Stack Navigator ראשי: Tabs + Detail (slide animation), SavedScreen מחליפה HomeScreen בטאב שמורים
+- `navigation/types.ts` — RootStackParamList עם DetailScreen params
+- `ListingCard.tsx` — `onPress` prop מחובר לnavigation, heart button מחובר לsavedStore, pill עיצוב שיפור
+- `HomeScreen.tsx` — מחובר לnavigation: כרטיסים → Detail, stat pills (מקורות / נבדקו / עסקאות)
+- `SearchScreen.tsx` — autocomplete בעברית + אנגלית ל-27 יצרנים, sort option "עסקה"
+- `MarketCompare.tsx` — עיצוב premium: gradient bar עם thumb, price grid, diff pill
+- `PriceHistoryChart.tsx` — area fill SVG, gradient, dots indicator, footer עם תאריכים ומחירים
+- `.github/workflows/ci.yml` — הוסף branch triggers (`claude/**`, `feature/**`) + mobile TypeScript job
+
+**סטטוס:** ✅ כל השינויים committed
+
+---
 
 ---
 

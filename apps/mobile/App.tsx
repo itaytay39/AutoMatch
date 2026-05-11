@@ -1,11 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import { I18nManager } from 'react-native'
 import { NavigationContainer } from '@react-navigation/native'
-
-// Force RTL layout globally — Hebrew app
-if (!I18nManager.isRTL) {
-  I18nManager.forceRTL(true)
-}
+import { createStackNavigator } from '@react-navigation/stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -22,27 +18,35 @@ import {
 import { HomeScreen } from './src/screens/HomeScreen'
 import { SearchScreen } from './src/screens/SearchScreen'
 import { AlertsScreen } from './src/screens/AlertsScreen'
+import { SavedScreen } from './src/screens/SavedScreen'
+import { DetailScreen } from './src/screens/DetailScreen'
 import { colors } from './src/theme/tokens'
 import { fonts } from './src/theme/typography'
 import { addNotificationListener, addResponseListener } from './src/services/pushNotifications'
+import type { RootStackParamList } from './src/navigation/types'
+
+// Force RTL layout globally — Hebrew app
+if (!I18nManager.isRTL) {
+  I18nManager.forceRTL(true)
+}
 
 SplashScreen.preventAutoHideAsync()
 
+const RootStack = createStackNavigator<RootStackParamList>()
 const Tab = createBottomTabNavigator()
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name']
 
-// Reversed so ראשי renders on the RIGHT in RTL layout
+// Reversed array so ראשי renders on the RIGHT in RTL
 const TABS: { name: string; component: React.ComponentType<any>; icon: IoniconName; iconActive: IoniconName }[] = [
-  { name: 'התראות',  component: AlertsScreen,  icon: 'notifications-outline', iconActive: 'notifications' },
-  { name: 'שמורים',  component: HomeScreen,    icon: 'bookmark-outline',      iconActive: 'bookmark' },
-  { name: 'חיפוש',   component: SearchScreen,  icon: 'search-outline',        iconActive: 'search' },
-  { name: 'ראשי',    component: HomeScreen,    icon: 'home-outline',          iconActive: 'home' },
+  { name: 'התראות', component: AlertsScreen,  icon: 'notifications-outline', iconActive: 'notifications' },
+  { name: 'שמורים', component: SavedScreen,   icon: 'heart-outline',         iconActive: 'heart' },
+  { name: 'חיפוש',  component: SearchScreen,  icon: 'search-outline',        iconActive: 'search' },
+  { name: 'ראשי',   component: HomeScreen,    icon: 'home-outline',          iconActive: 'home' },
 ]
 
 function AppTabs() {
   const insets = useSafeAreaInsets()
-
   return (
     <Tab.Navigator
       initialRouteName="ראשי"
@@ -56,7 +60,7 @@ function AppTabs() {
             borderTopWidth: 0.5,
             paddingBottom: Math.max(insets.bottom, 8),
             paddingTop: 10,
-            height: 56 + Math.max(insets.bottom, 8),
+            height: 58 + Math.max(insets.bottom, 8),
           },
           tabBarActiveTintColor: colors.accent,
           tabBarInactiveTintColor: colors.fg3,
@@ -94,9 +98,8 @@ export default function App() {
     notifListener.current = addNotificationListener(notification => {
       console.log('Push received:', notification.request.content.title)
     })
-    responseListener.current = addResponseListener(response => {
-      const data = response.notification.request.content.data as Record<string, string>
-      console.log('Push tapped — listingId:', data?.listingId)
+    responseListener.current = addResponseListener(_response => {
+      // Navigate to Detail when push notification is tapped — handled by useNavigation in child
     })
     return () => {
       notifListener.current?.remove()
@@ -109,7 +112,32 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <NavigationContainer>
-        <AppTabs />
+        <RootStack.Navigator screenOptions={{ headerShown: false, cardStyle: { backgroundColor: colors.bg0 } }}>
+          <RootStack.Screen name="Main" component={AppTabs} />
+          <RootStack.Screen
+            name="Detail"
+            component={DetailScreen}
+            options={{
+              presentation: 'card',
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+              transitionSpec: {
+                open:  { animation: 'timing', config: { duration: 280 } },
+                close: { animation: 'timing', config: { duration: 240 } },
+              },
+              cardStyleInterpolator: ({ current, layouts }) => ({
+                cardStyle: {
+                  transform: [{
+                    translateX: current.progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [layouts.screen.width, 0],
+                    }),
+                  }],
+                },
+              }),
+            }}
+          />
+        </RootStack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
   )

@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, master, 'claude/**', 'feature/**']
   pull_request:
-    branches: [main]
+    branches: [main, master]
 
 jobs:
   unit-tests:
@@ -78,6 +78,20 @@ jobs:
           npx vitest run --config vitest.e2e.config.ts
         env:
           API_URL: http://localhost:3000
+
+  mobile-typecheck:
+    name: Mobile — TypeScript
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+        working-directory: apps/mobile
+      - run: npx tsc --noEmit
+        working-directory: apps/mobile
 
   docker-build:
     name: Docker Build
