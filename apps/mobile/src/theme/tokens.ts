@@ -1,56 +1,70 @@
-// AutoMatch Design Tokens — Premium Automotive Dark Theme
+// AutoMatch Design Tokens — Google Health / Material 3 Expressive
+// Light warm theme with section tints per tab. Blue accent.
 export const colors = {
-  // Backgrounds — true dark, not cartoon dark
-  bg0: '#06080B',   // app background
-  bg1: '#0D1117',   // card surface
-  bg2: '#141B24',   // input / chip
-  bg3: '#1C2535',   // pressed / hover
+  // Backgrounds — warm off-white
+  bg0: '#F5F2EA',        // app background
+  bg1: '#FFFFFF',        // card / sheet
+  bg2: '#FBFAF6',        // secondary surface
+  bg3: '#F0EDE5',        // pressed / hover
 
-  // Foregrounds
-  fg1: '#EDF0F4',   // primary text
-  fg2: '#8C97A8',   // secondary text
-  fg3: '#4F5C6E',   // tertiary / captions
-  fg4: '#2E3847',   // disabled / placeholder
+  // Foregrounds — ink hierarchy
+  fg1: '#1B1E1B',        // primary text
+  fg2: '#4A4D4A',        // secondary text
+  fg3: '#7A7D7A',        // tertiary / captions
+  fg4: '#A8AAA6',        // disabled / placeholder
 
   // Borders
-  border1: 'rgba(255,255,255,0.05)',
-  border2: 'rgba(255,255,255,0.09)',
-  border3: '#1E2A3A',
+  border1: 'rgba(27,30,27,0.06)',
+  border2: 'rgba(27,30,27,0.10)',
+  border3: 'rgba(27,30,27,0.14)',
 
-  // Brand accent — warm amber (automotive, not AI)
-  accent:      '#E8943A',
-  accentSoft:  'rgba(232,148,58,0.12)',
-  accentMuted: '#C47B2E',
+  // Brand accent — calm premium blue
+  accent:      '#2A5BB5',
+  accentSoft:  '#DCE6F5',
+  accentMuted: '#3D72D1',
+  onAccent:    '#FFFFFF',
+
+  // Section tints — unique pastel bg per tab
+  tintHome:   '#E6EEE7',
+  tintSearch: '#F0EADB',
+  tintSaved:  '#EDE5F0',
+  tintAlerts: '#F4E5DC',
+  tintDetail: '#E8E4D8',
+
+  // Section accent darks (text on tint)
+  accHome:   '#2E6F4E',
+  accSearch: '#8B6F2E',
+  accSaved:  '#6A468C',
+  accAlerts: '#A1532B',
 
   // Semantic
-  success:     '#16A34A',
-  successSoft: 'rgba(22,163,74,0.13)',
-  warning:     '#D97706',
-  warningSoft: 'rgba(217,119,6,0.13)',
-  danger:      '#DC2626',
-  dangerSoft:  'rgba(220,38,38,0.13)',
+  success:     '#1F6E4D',
+  successSoft: '#E1EFE8',
+  warning:     '#B07A1A',
+  warningSoft: '#F5EBD2',
+  danger:      '#B83A2A',
+  dangerSoft:  '#F5DDD7',
   info:        '#2563EB',
   infoSoft:    'rgba(37,99,235,0.13)',
 
-  // Legacy aliases (keep components working)
-  primaryBlue:    '#2563EB',
-  accentPurple:   '#E8943A',  // remapped to amber
-  electricCyan:   '#E8943A',
-  border1Legacy:  'rgba(255,255,255,0.05)',
-  border2Legacy:  'rgba(255,255,255,0.09)',
-  successSoftLegacy: 'rgba(22,163,74,0.13)',
-  warningSoftLegacy: 'rgba(217,119,6,0.13)',
-  dangerSoftLegacy:  'rgba(220,38,38,0.13)',
+  // Legacy aliases — keep existing components building
+  primaryBlue:    '#2A5BB5',
+  accentPurple:   '#2A5BB5',
+  electricCyan:   '#2A5BB5',
+  border1Legacy:  'rgba(27,30,27,0.06)',
+  border2Legacy:  'rgba(27,30,27,0.10)',
+  successSoftLegacy: '#E1EFE8',
+  warningSoftLegacy: '#F5EBD2',
+  dangerSoftLegacy:  '#F5DDD7',
 } as const
 
 export const gradients = {
-  accent:  ['#E8943A', '#D4731E'] as [string, string],
-  success: ['#16A34A', '#15803D'] as [string, string],
-  dark:    ['#0D1117', '#06080B'] as [string, string],
-  // Legacy aliases
-  primary: ['#E8943A', '#D4731E'] as [string, string],
-  cool:    ['#2563EB', '#1D4ED8'] as [string, string],
-  hero:    ['#E8943A', '#D4731E', '#C47B2E'] as [string, string, string],
+  accent:  ['#2A5BB5', '#3D72D1'] as [string, string],
+  success: ['#1F6E4D', '#2E8B57'] as [string, string],
+  dark:    ['#FFFFFF', '#FBFAF6'] as [string, string],
+  primary: ['#2A5BB5', '#3D72D1'] as [string, string],
+  cool:    ['#2A5BB5', '#1D4ED8'] as [string, string],
+  hero:    ['#2A5BB5', '#3D72D1', '#4A84E5'] as [string, string, string],
 } as const
 
 export const spacing = {
@@ -58,12 +72,12 @@ export const spacing = {
 } as const
 
 export const radii = {
-  xs: 4, sm: 8, md: 10, lg: 14, xl: 18, xxl: 24, pill: 999,
+  xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 28, pill: 999,
 } as const
 
 export const fontSize = {
-  display1: 30, display2: 22, headline: 18,
-  title: 15, body: 13, caption: 11, micro: 10,
+  display1: 30, display2: 26, headline: 19,
+  title: 15, body: 14, caption: 12, micro: 10,
 } as const
 
 export const fontWeight = {
@@ -73,3 +87,28 @@ export const fontWeight = {
   bold:     '700' as const,
   black:    '800' as const,
 }
+
+// React Native shadow helpers
+export const shadows = {
+  sm: {
+    shadowColor: '#1B1E1B' as string,
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
+  },
+  md: {
+    shadowColor: '#1B1E1B' as string,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
+  },
+  lg: {
+    shadowColor: '#1B1E1B' as string,
+    shadowOpacity: 0.12,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 10,
+  },
+} as const

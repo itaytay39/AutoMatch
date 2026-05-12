@@ -1,8 +1,8 @@
 import React, { useCallback } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native'
-import { LinearGradient } from 'expo-linear-gradient'
+import { View, Text, TouchableOpacity, StyleSheet, Image, Dimensions } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { colors, radii, spacing, fontSize } from '../theme/tokens'
+import Svg, { Polyline } from 'react-native-svg'
+import { colors, radii, spacing, fontSize, shadows } from '../theme/tokens'
 import { fonts } from '../theme/typography'
 import { toggleSaved, useSaved } from '../store/savedStore'
 
@@ -16,11 +16,15 @@ export interface ListingCardData {
   city?: string
   source: string
   imageUrl?: string
+  trim?: string
+  hand?: number
   priceLabel?: 'good' | 'fair' | 'expensive'
   daysOnLot?: number
   odometerSuspicious?: boolean
   redFlags?: string[]
   dealScore?: 'great' | 'good' | 'fair' | 'suspicious'
+  priceDelta?: number
+  priceHistory?: number[]
 }
 
 interface Props {
@@ -28,111 +32,166 @@ interface Props {
   onPress?: () => void
 }
 
-const PRICE_CONFIG: Record<string, { color: string; bg: string; label: string }> = {
-  good:      { color: '#34D399', bg: '#0D2E1A', label: 'מחיר טוב' },
-  fair:      { color: colors.fg3, bg: colors.bg2, label: 'מחיר שוק' },
-  expensive: { color: '#F87171', bg: '#2A0D0D', label: 'יקר יחסית' },
+const SOURCE_DOT: Record<string, string> = {
+  yad2:     '#FF6B35',
+  homeless: '#6B35FF',
+  autoboom: '#35B0FF',
+  carwiz:   '#35FF8A',
 }
 
-const DEAL_DOTS: Record<string, string> = {
-  great: '#34D399', good: '#6EE7B7', fair: colors.fg3, suspicious: colors.warning,
+const DEAL_CONFIG: Record<string, { color: string; bg: string; label: string }> = {
+  great:      { color: colors.success,  bg: colors.successSoft, label: 'עסקה מצוינת' },
+  good:       { color: colors.success,  bg: colors.successSoft, label: 'עסקה טובה' },
+  fair:       { color: colors.warning,  bg: colors.warningSoft, label: 'מחיר שוק' },
+  expensive:  { color: colors.danger,   bg: colors.dangerSoft,  label: 'יקר יחסית' },
+  suspicious: { color: colors.warning,  bg: colors.warningSoft, label: 'חשוד' },
+}
+
+const { width: SW } = Dimensions.get('window')
+
+function Sparkline({ values, width = 64, height = 22 }: { values: number[]; width?: number; height?: number }) {
+  if (!values || values.length < 2) return null
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  const range = max - min || 1
+  const stepX = width / (values.length - 1)
+  const pts = values
+    .map((v, i) => `${i * stepX},${height - ((v - min) / range) * (height - 2) - 1}`)
+    .join(' ')
+  const trendDown = values[values.length - 1] <= values[0]
+  const lineColor = trendDown ? colors.success : colors.danger
+  return (
+    <Svg width={width} height={height}>
+      <Polyline
+        points={pts}
+        fill="none"
+        stroke={lineColor}
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </Svg>
+  )
 }
 
 export function ListingCard({ listing, onPress }: Props) {
   const saved = useSaved()
   const isSaved = saved.has(listing.id)
 
-  const handleSave = useCallback((_e: unknown) => {
-    e.stopPropagation?.()
+  const handleSave = useCallback((e: any) => {
+    e?.stopPropagation?.()
     toggleSaved(listing.id)
   }, [listing.id])
 
-  const pill = PRICE_CONFIG[listing.priceLabel ?? 'fair']
-  const dealDot = DEAL_DOTS[listing.dealScore ?? 'fair']
+  const deal = DEAL_CONFIG[listing.dealScore ?? 'fair']
   const price = listing.price.toLocaleString('he-IL')
-  const suspicious = listing.odometerSuspicious || listing.dealScore === 'suspicious'
-
+  const sourceDotColor = SOURCE_DOT[listing.source] ?? colors.fg4
+  const priceDeltaAbs = listing.priceDelta && listing.priceDelta < 0
+    ? Math.abs(listing.priceDelta).toLocaleString('he-IL')
+    : null
   const metaParts = [
     listing.year?.toString(),
     listing.mileage ? `${listing.mileage.toLocaleString('he-IL')} ק״מ` : null,
     listing.city,
   ].filter(Boolean)
 
+  const hasTrend = listing.priceHistory && listing.priceHistory.length >= 2
+  const trendDown = hasTrend
+    ? listing.priceHistory![listing.priceHistory!.length - 1] <= listing.priceHistory![0]
+    : true
+  const trendPct = hasTrend
+    ? Math.round(
+        ((listing.priceHistory![listing.priceHistory!.length - 1] - listing.priceHistory![0]) /
+          listing.priceHistory![0]) * 100
+      )
+    : null
+
   return (
     <TouchableOpacity style={s.card} onPress={onPress} activeOpacity={0.93}>
 
-      {/* ── Image ── */}
-      <View style={s.imageWrap}>
-        {listing.imageUrl ? (
-          <Image
-            source={{ uri: listing.imageUrl }}
-            style={StyleSheet.absoluteFillObject}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={s.imgFallback}>
-            <Ionicons name="car-sport-outline" size={44} color={colors.fg4} />
-          </View>
-        )}
+      <View style={s.imageArea}>
+        <View style={s.imageInner}>
+          {listing.imageUrl ? (
+            <Image
+              source={{ uri: listing.imageUrl }}
+              style={StyleSheet.absoluteFillObject}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={s.imgFallback}>
+              <Ionicons name="car-sport-outline" size={44} color={colors.fg4} />
+            </View>
+          )}
 
-        <LinearGradient
-          colors={['transparent', 'rgba(6,8,11,0.92)']}
-          style={s.scrim}
-        />
-
-        {/* Top overlay */}
-        <View style={s.imgTop}>
           <TouchableOpacity
-            style={[s.favBtn, isSaved && s.favBtnSaved]}
+            style={[s.heartBtn, isSaved && s.heartBtnSaved]}
             onPress={handleSave}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons
               name={isSaved ? 'heart' : 'heart-outline'}
-              size={14}
-              color={isSaved ? colors.danger : 'rgba(255,255,255,0.85)'}
+              size={15}
+              color={isSaved ? colors.danger : colors.fg2}
             />
           </TouchableOpacity>
-          <View style={s.sourcePill}>
-            <Text style={s.sourceText}>{listing.source}</Text>
-          </View>
-        </View>
 
-        {/* Bottom overlay — meta info */}
-        <View style={s.imgBottom}>
-          {suspicious && (
-            <Ionicons name="warning" size={12} color={colors.warning} style={{ marginEnd: 4 }} />
-          )}
-          <Text style={s.metaLine} numberOfLines={1}>
-            {metaParts.join('  ·  ')}
-          </Text>
+          <View style={s.sourceBadge}>
+            <View style={[s.sourceDot, { backgroundColor: sourceDotColor }]} />
+            <Text style={s.sourceBadgeText}>{listing.source}</Text>
+          </View>
         </View>
       </View>
 
-      {/* ── Info ── */}
-      <View style={s.info}>
-        {/* Name row */}
-        <View style={s.nameRow}>
-          <Text style={s.carName} numberOfLines={1}>{listing.make} {listing.model}</Text>
-          {/* Deal quality dot */}
-          <View style={[s.dealDot, { backgroundColor: dealDot }]} />
+      <View style={s.content}>
+        <View style={s.titleRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.carName} numberOfLines={1}>
+              {listing.make} {listing.model}
+            </Text>
+            {(listing.trim || listing.hand) && (
+              <Text style={s.trimHand}>
+                {[listing.trim, listing.hand ? `יד ${listing.hand}` : null]
+                  .filter(Boolean).join(' · ')}
+              </Text>
+            )}
+          </View>
+          {listing.dealScore && (
+            <View style={[s.dealBadge, { backgroundColor: deal.bg }]}>
+              <Text style={[s.dealBadgeText, { color: deal.color }]}>{deal.label}</Text>
+            </View>
+          )}
         </View>
 
-        {/* Price row — price + label pill */}
         <View style={s.priceRow}>
-          <View style={[s.pricePill, { backgroundColor: pill.bg }]}>
-            <Text style={[s.pillText, { color: pill.color }]}>{pill.label}</Text>
-          </View>
-          <Text style={[s.price, suspicious && { color: colors.warning }]}>₪{price}</Text>
+          <Text style={s.bigPrice}>₪{price}</Text>
+          {priceDeltaAbs && (
+            <View style={s.priceDrop}>
+              <Text style={s.priceDropText}>↓ ₪{priceDeltaAbs}</Text>
+            </View>
+          )}
         </View>
 
-        {/* Red flag count if any */}
-        {listing.redFlags && listing.redFlags.length > 0 && (
-          <View style={s.flagsHint}>
-            <Ionicons name="alert-circle-outline" size={11} color={colors.warning} />
-            <Text style={s.flagsText}>{listing.redFlags.length} אזהרות · לחץ לפרטים</Text>
-          </View>
+        {metaParts.length > 0 && (
+          <Text style={s.specLine} numberOfLines={1}>
+            {metaParts.join(' · ')}
+          </Text>
         )}
+
+        <View style={s.footer}>
+          <View style={s.footerLeft}>
+            {hasTrend && (
+              <>
+                <Sparkline values={listing.priceHistory!} width={64} height={22} />
+                <Text style={s.trendLabel}>מגמת מחיר · 30 ימים</Text>
+              </>
+            )}
+          </View>
+          {trendPct !== null && (
+            <Text style={[s.trendPct, { color: trendDown ? colors.success : colors.danger }]}>
+              {trendDown ? '' : '+'}{trendPct}%
+            </Text>
+          )}
+        </View>
       </View>
 
     </TouchableOpacity>
@@ -142,78 +201,157 @@ export function ListingCard({ listing, onPress }: Props) {
 const s = StyleSheet.create({
   card: {
     backgroundColor: colors.bg1,
-    borderRadius: radii.xl,
+    borderRadius: radii.xxl,
     overflow: 'hidden',
     marginBottom: spacing[3],
-    borderWidth: 0.5,
-    borderColor: colors.border2,
+    ...shadows.sm,
   },
 
-  imageWrap: { aspectRatio: 16 / 9, backgroundColor: colors.bg2 },
-  imgFallback: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
-  scrim: { position: 'absolute', bottom: 0, left: 0, right: 0, height: '60%' },
+  imageArea: {
+    padding: 8,
+  },
+  imageInner: {
+    height: 176,
+    borderRadius: 18,
+    overflow: 'hidden',
+    backgroundColor: colors.bg2,
+  },
+  imgFallback: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.bg2,
+  },
 
-  imgTop: {
-    position: 'absolute', top: 10, left: 10, right: 10,
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+  heartBtn: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.sm,
   },
-  favBtn: {
-    width: 32, height: 32, borderRadius: 16,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.12)',
+  heartBtnSaved: {
+    backgroundColor: colors.dangerSoft,
   },
-  favBtnSaved: {
-    backgroundColor: 'rgba(220,38,38,0.25)',
-    borderColor: 'rgba(220,38,38,0.45)',
-  },
-  sourcePill: {
-    backgroundColor: 'rgba(0,0,0,0.48)',
+
+  sourceBadge: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.90)',
     borderRadius: radii.pill,
-    paddingHorizontal: 9, paddingVertical: 3,
-    borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.12)',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
   },
-  sourceText: { fontSize: 10, color: 'rgba(255,255,255,0.80)', fontFamily: fonts.medium },
+  sourceDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+  },
+  sourceBadgeText: {
+    fontSize: fontSize.caption - 1,
+    color: colors.fg2,
+    fontFamily: fonts.medium,
+  },
 
-  imgBottom: {
-    position: 'absolute', bottom: 10, left: 12, right: 12,
-    flexDirection: 'row-reverse', alignItems: 'center',
-  },
-  metaLine: {
-    color: 'rgba(255,255,255,0.75)', fontSize: 11,
-    fontFamily: fonts.medium, letterSpacing: 0.1, textAlign: 'right', flex: 1,
+  content: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 18,
   },
 
-  info: {
-    paddingHorizontal: spacing[4],
-    paddingTop: spacing[3],
-    paddingBottom: spacing[4],
-  },
-  nameRow: {
-    flexDirection: 'row-reverse', alignItems: 'center',
-    justifyContent: 'space-between', marginBottom: 5,
+  titleRow: {
+    flexDirection: 'row-reverse',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 6,
   },
   carName: {
-    color: colors.fg1, fontSize: fontSize.title, fontFamily: fonts.semibold,
-    flex: 1, textAlign: 'right',
+    fontSize: 17,
+    color: colors.fg1,
+    fontFamily: fonts.bold,
+    textAlign: 'right',
   },
-  dealDot: { width: 8, height: 8, borderRadius: 4, marginStart: spacing[2] },
+  trimHand: {
+    fontSize: fontSize.caption,
+    color: colors.fg3,
+    fontFamily: fonts.regular,
+    textAlign: 'right',
+    marginTop: 2,
+  },
+
+  dealBadge: {
+    borderRadius: radii.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginStart: 10,
+    marginTop: 2,
+  },
+  dealBadgeText: {
+    fontSize: fontSize.caption,
+    fontFamily: fonts.semibold,
+  },
 
   priceRow: {
-    flexDirection: 'row-reverse', alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
   },
-  price: {
-    color: colors.fg1, fontSize: 22, fontFamily: fonts.bold,
-    letterSpacing: -0.5, textAlign: 'right',
+  bigPrice: {
+    fontSize: 22,
+    color: colors.fg1,
+    fontFamily: fonts.bold,
+    letterSpacing: -0.5,
   },
-  pricePill: {
-    borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4,
+  priceDrop: {
+    backgroundColor: colors.successSoft,
+    borderRadius: radii.pill,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
   },
-  pillText: { fontSize: 11, fontFamily: fonts.semibold },
+  priceDropText: {
+    fontSize: fontSize.caption,
+    color: colors.success,
+    fontFamily: fonts.semibold,
+  },
 
-  flagsHint: {
-    flexDirection: 'row-reverse', alignItems: 'center', gap: 4, marginTop: spacing[2],
+  specLine: {
+    fontSize: fontSize.caption,
+    color: colors.fg2,
+    fontFamily: fonts.regular,
+    textAlign: 'right',
+    marginBottom: 10,
   },
-  flagsText: { color: colors.warning, fontSize: 10, fontFamily: fonts.medium },
+
+  footer: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.border1,
+  },
+  footerLeft: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 6,
+  },
+  trendLabel: {
+    fontSize: 11,
+    color: colors.fg3,
+    fontFamily: fonts.regular,
+  },
+  trendPct: {
+    fontSize: fontSize.caption,
+    fontFamily: fonts.bold,
+  },
 })

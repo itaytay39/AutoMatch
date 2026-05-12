@@ -3,8 +3,7 @@ import { I18nManager } from 'react-native'
 import { NavigationContainer } from '@react-navigation/native'
 import { createStackNavigator } from '@react-navigation/stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
-import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Ionicons } from '@expo/vector-icons'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import * as Notifications from 'expo-notifications'
 import * as SplashScreen from 'expo-splash-screen'
 import {
@@ -21,7 +20,7 @@ import { AlertsScreen } from './src/screens/AlertsScreen'
 import { SavedScreen } from './src/screens/SavedScreen'
 import { DetailScreen } from './src/screens/DetailScreen'
 import { colors } from './src/theme/tokens'
-import { fonts } from './src/theme/typography'
+import { AppTabBar } from './src/navigation/AppTabBar'
 import { addNotificationListener, addResponseListener } from './src/services/pushNotifications'
 import type { RootStackParamList } from './src/navigation/types'
 
@@ -35,41 +34,20 @@ SplashScreen.preventAutoHideAsync()
 const RootStack = createStackNavigator<RootStackParamList>()
 const Tab = createBottomTabNavigator()
 
-type IoniconName = React.ComponentProps<typeof Ionicons>['name']
-
-// Reversed array so ראשי renders on the RIGHT in RTL
-const TABS: { name: string; component: React.ComponentType<any>; icon: IoniconName; iconActive: IoniconName }[] = [
-  { name: 'התראות', component: AlertsScreen,  icon: 'notifications-outline', iconActive: 'notifications' },
-  { name: 'שמורים', component: SavedScreen,   icon: 'heart-outline',         iconActive: 'heart' },
-  { name: 'חיפוש',  component: SearchScreen,  icon: 'search-outline',        iconActive: 'search' },
-  { name: 'ראשי',   component: HomeScreen,    icon: 'home-outline',          iconActive: 'home' },
+// Reversed so ראשי renders on the RIGHT in RTL
+const TABS = [
+  { name: 'התראות', component: AlertsScreen },
+  { name: 'שמורים', component: SavedScreen  },
+  { name: 'חיפוש',  component: SearchScreen },
+  { name: 'ראשי',   component: HomeScreen   },
 ]
 
 function AppTabs() {
-  const insets = useSafeAreaInsets()
   return (
     <Tab.Navigator
       initialRouteName="ראשי"
-      screenOptions={({ route }) => {
-        const tab = TABS.find(t => t.name === route.name)!
-        return {
-          headerShown: false,
-          tabBarStyle: {
-            backgroundColor: colors.bg1,
-            borderTopColor: colors.border1,
-            borderTopWidth: 0.5,
-            paddingBottom: Math.max(insets.bottom, 8),
-            paddingTop: 10,
-            height: 58 + Math.max(insets.bottom, 8),
-          },
-          tabBarActiveTintColor: colors.accent,
-          tabBarInactiveTintColor: colors.fg3,
-          tabBarLabelStyle: { fontFamily: fonts.medium, fontSize: 10, marginTop: 2 },
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? tab.iconActive : tab.icon} size={22} color={color} />
-          ),
-        }
-      }}
+      tabBar={props => <AppTabBar {...props} />}
+      screenOptions={{ headerShown: false }}
     >
       {TABS.map(tab => (
         <Tab.Screen key={tab.name} name={tab.name} component={tab.component} />
@@ -112,7 +90,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <NavigationContainer>
-        <RootStack.Navigator screenOptions={{ headerShown: false, cardStyle: { backgroundColor: colors.bg0 } }}>
+        <RootStack.Navigator screenOptions={{ headerShown: false, cardStyle: { backgroundColor: colors.bg0, flex: 1 } }}>
           <RootStack.Screen name="Main" component={AppTabs} />
           <RootStack.Screen
             name="Detail"

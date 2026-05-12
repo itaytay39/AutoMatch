@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   View, Text, FlatList, StyleSheet, StatusBar,
   ActivityIndicator, TouchableOpacity, TextInput,
-  ListRenderItem,
+  ScrollView, Modal, Pressable, ListRenderItem,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -10,14 +10,13 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import { ListingCard, type ListingCardData } from '../components/ListingCard'
 import { FilterSheet, FilterBadge, type Filters } from '../components/FilterSheet'
-import { colors, spacing, fontSize, radii } from '../theme/tokens'
+import { colors, spacing, fontSize, radii, shadows } from '../theme/tokens'
 import { fonts } from '../theme/typography'
 import { api } from '../services/api'
 import type { RootStackParamList } from '../navigation/types'
 
 type Nav = StackNavigationProp<RootStackParamList>
 
-// Hebrew → English make mapping for search
 const HE_TO_EN: Record<string, string> = {
   'טויוטה': 'Toyota', 'יונדאי': 'Hyundai', 'קיה': 'Kia', 'מאזדה': 'Mazda',
   'הונדה': 'Honda', 'ניסאן': 'Nissan', 'מיצובישי': 'Mitsubishi', 'סוזוקי': 'Suzuki',
@@ -55,12 +54,21 @@ function getSuggestions(q: string) {
   ).slice(0, 5)
 }
 
+const QUICK_CHIPS = [
+  { label: 'חשמלי', key: 'electric' },
+  { label: 'היברידי', key: 'hybrid' },
+  { label: 'עד 150K ₪', key: 'price150' },
+  { label: 'יד 1', key: 'hand1' },
+  { label: '2022+', key: 'year2022' },
+  { label: 'קרוסאובר', key: 'crossover' },
+]
+
 const SORT_OPTIONS = [
-  { label: 'חדש', key: 'newest' },
-  { label: 'מחיר ↑', key: 'price_asc' },
-  { label: 'מחיר ↓', key: 'price_desc' },
-  { label: 'ק״מ', key: 'km_asc' },
-  { label: 'עסקה', key: 'deal' },
+  { label: 'הכי חדש', key: 'newest' },
+  { label: 'מחיר: נמוך לגבוה', key: 'price_asc' },
+  { label: 'מחיר: גבוה לנמוך', key: 'price_desc' },
+  { label: 'ק״מ נמוך', key: 'km_asc' },
+  { label: 'עסקאות טובות', key: 'deal' },
 ]
 
 const PAGE_SIZE = 20
@@ -81,13 +89,27 @@ function toCard(l: any): ListingCardData {
   }
 }
 
+function applySort(rows: ListingCardData[], sort: string): ListingCardData[] {
+  const sorted = [...rows]
+  if (sort === 'price_asc')  sorted.sort((a, b) => a.price - b.price)
+  if (sort === 'price_desc') sorted.sort((a, b) => b.price - a.price)
+  if (sort === 'km_asc')     sorted.sort((a, b) => (a.mileage ?? 999999) - (b.mileage ?? 999999))
+  if (sort === 'deal') {
+    const order: Record<string, number> = { great: 0, good: 1, fair: 2, suspicious: 3 }
+    sorted.sort((a, b) => (order[a.dealScore ?? 'fair'] ?? 2) - (order[b.dealScore ?? 'fair'] ?? 2))
+  }
+  return sorted
+}
+
 export function SearchScreen() {
   const navigation = useNavigation<Nav>()
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState('newest')
   const [filters, setFilters] = useState<Filters>({})
   const [showFilters, setShowFilters] = useState(false)
+  const [showSort, setShowSort] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [activeChip, setActiveChip] = useState<string | null>(null)
   const [listings, setListings] = useState<ListingCardData[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -156,6 +178,8 @@ export function SearchScreen() {
 
   const applyFilters = (f: Filters) => { setFilters(f) }
 
+  const currentSortLabel = SORT_OPTIONS.find(o => o.key === sort)?.label ?? 'מיין'
+
   const renderItem: ListRenderItem<ListingCardData> = ({ item }) => (
     <ListingCard
       listing={item}
@@ -175,19 +199,17 @@ export function SearchScreen() {
     <View style={s.emptyWrap}>
       <Ionicons name="cloud-offline-outline" size={52} color={colors.fg4} />
       <Text style={s.emptyTitle}>בעיית חיבור</Text>
-      <Text style={s.emptyHint}>בדוק את החיבור לאינטרנט ונסה שוב</Text>
-      <TouchableOpacity style={s.retryBtn} onPress={fetchFirst}>
-        <Text style={s.retryText}>נסה שוב</Text>
+      <TouchableOpacity onPress={fetchFirst}>
+        <Text style={s.retryLink}>נסה שוב</Text>
       </TouchableOpacity>
     </View>
   ) : (
     <View style={s.emptyWrap}>
       <Ionicons name="search-outline" size={52} color={colors.fg4} />
-      <Text style={s.emptyTitle}>לא נמצאו רכבים</Text>
-      <Text style={s.emptyHint}>נסה לשנות את הפילטרים או לחפש בעברית / אנגלית</Text>
+      <Text style={s.emptyTitle}>לא מצאנו רכבים תואמים</Text>
       {filterCount > 0 && (
-        <TouchableOpacity style={s.retryBtn} onPress={() => setFilters({})}>
-          <Text style={s.retryText}>נקה פילטרים</Text>
+        <TouchableOpacity style={s.resetBtn} onPress={() => setFilters({})}>
+          <Text style={s.resetBtnText}>אפס פילטרים</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -195,18 +217,18 @@ export function SearchScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.bg0} />
+      <StatusBar barStyle="dark-content" />
 
-      {/* Top bar */}
-      <View style={s.topBar}>
+      <View style={s.header}>
+        <Text style={s.headline}>חיפוש</Text>
+
         <View style={s.searchRow}>
-          <FilterBadge count={filterCount} onPress={() => setShowFilters(true)} />
           <View style={s.searchBar}>
-            <Ionicons name="search-outline" size={16} color={colors.fg3} style={{ marginEnd: 8 }} />
+            <Ionicons name="search-outline" size={18} color={colors.fg3} style={s.searchIcon} />
             <TextInput
               ref={inputRef}
               style={s.searchInput}
-              placeholder="Toyota, קיה, חיפה..."
+              placeholder="חפש יצרן, דגם..."
               placeholderTextColor={colors.fg4}
               value={query}
               onChangeText={v => { setQuery(v); setShowSuggestions(true) }}
@@ -218,18 +240,26 @@ export function SearchScreen() {
               onSubmitEditing={() => setShowSuggestions(false)}
             />
             {query.length > 0 && (
-              <TouchableOpacity onPress={() => { setQuery(''); setShowSuggestions(false) }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <TouchableOpacity
+                onPress={() => { setQuery(''); setShowSuggestions(false) }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
                 <Ionicons name="close-circle" size={16} color={colors.fg3} />
               </TouchableOpacity>
             )}
           </View>
+          <FilterBadge count={filterCount} onPress={() => setShowFilters(true)} />
         </View>
 
-        {/* Autocomplete */}
         {showSuggestions && suggestions.length > 0 && (
           <View style={s.suggestions}>
             {suggestions.map(m => (
-              <TouchableOpacity key={m.en} style={s.suggRow} onPress={() => selectSuggestion(m)} activeOpacity={0.75}>
+              <TouchableOpacity
+                key={m.en}
+                style={s.suggRow}
+                onPress={() => selectSuggestion(m)}
+                activeOpacity={0.75}
+              >
                 <Ionicons name="car-outline" size={14} color={colors.fg3} />
                 <Text style={s.suggEn}>{m.en}</Text>
                 <Text style={s.suggHe}>{m.he}</Text>
@@ -238,49 +268,59 @@ export function SearchScreen() {
           </View>
         )}
 
-        {/* Sort chips */}
-        <FlatList
-          data={SORT_OPTIONS}
+        <ScrollView
           horizontal
-          inverted
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={s.sortRow}
-          keyExtractor={o => o.key}
-          renderItem={({ item: opt }) => (
-            <TouchableOpacity
-              style={[s.sortChip, opt.key === sort && s.sortChipActive]}
-              onPress={() => setSort(opt.key)}
-              activeOpacity={0.75}
-            >
-              <Text style={[s.sortChipText, opt.key === sort && s.sortChipTextActive]}>{opt.label}</Text>
-            </TouchableOpacity>
-          )}
-        />
-
-        {/* Count */}
-        {!loading && (
-          <Text style={s.count}>
-            {total > 0 ? `${total.toLocaleString('he-IL')} תוצאות` : query.length > 0 || filterCount > 0 ? 'אין תוצאות' : 'כל המודעות'}
-          </Text>
-        )}
+          contentContainerStyle={s.chipsRow}
+        >
+          {QUICK_CHIPS.map(chip => {
+            const isActive = activeChip === chip.key
+            return (
+              <TouchableOpacity
+                key={chip.key}
+                style={[s.chip, isActive && s.chipActive]}
+                onPress={() => setActiveChip(isActive ? null : chip.key)}
+                activeOpacity={0.75}
+              >
+                <Text style={[s.chipText, isActive && s.chipTextActive]}>{chip.label}</Text>
+              </TouchableOpacity>
+            )
+          })}
+        </ScrollView>
       </View>
 
-      {loading ? (
-        <View style={s.loadingWrap}><ActivityIndicator size="large" color={colors.accent} /></View>
-      ) : (
-        <FlatList
-          data={listings}
-          keyExtractor={l => l.id}
-          renderItem={renderItem}
-          contentContainerStyle={s.listContent}
-          onEndReached={fetchMore}
-          onEndReachedThreshold={0.4}
-          ListFooterComponent={ListFooter}
-          ListEmptyComponent={ListEmpty}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        />
-      )}
+      <View style={s.sheet}>
+        <View style={s.resultsRow}>
+          <TouchableOpacity style={s.sortBtn} onPress={() => setShowSort(true)} activeOpacity={0.75}>
+            <Text style={s.sortBtnText}>מיין ↓</Text>
+          </TouchableOpacity>
+          {!loading && (
+            <Text style={s.resultsCount}>
+              <Text style={s.resultsNumber}>{total.toLocaleString('he-IL')}</Text>
+              {' תוצאות'}
+            </Text>
+          )}
+        </View>
+
+        {loading ? (
+          <View style={s.loadingWrap}>
+            <ActivityIndicator size="large" color={colors.accent} />
+          </View>
+        ) : (
+          <FlatList
+            data={listings}
+            keyExtractor={l => l.id}
+            renderItem={renderItem}
+            contentContainerStyle={s.listContent}
+            onEndReached={fetchMore}
+            onEndReachedThreshold={0.4}
+            ListFooterComponent={ListFooter}
+            ListEmptyComponent={ListEmpty}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          />
+        )}
+      </View>
 
       <FilterSheet
         visible={showFilters}
@@ -288,73 +328,271 @@ export function SearchScreen() {
         onApply={applyFilters}
         onClose={() => setShowFilters(false)}
       />
+
+      <Modal
+        visible={showSort}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowSort(false)}
+      >
+        <Pressable style={s.sortOverlay} onPress={() => setShowSort(false)}>
+          <Pressable style={s.sortSheet} onPress={e => e.stopPropagation()}>
+            <View style={s.sortHandle} />
+            {SORT_OPTIONS.map(opt => {
+              const isActive = opt.key === sort
+              return (
+                <TouchableOpacity
+                  key={opt.key}
+                  style={s.sortOption}
+                  onPress={() => { setSort(opt.key); setShowSort(false) }}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[s.sortOptionText, isActive && s.sortOptionTextActive]}>
+                    {opt.label}
+                  </Text>
+                  {isActive && <View style={s.sortActiveDot} />}
+                </TouchableOpacity>
+              )
+            })}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   )
 }
 
-function applySort(rows: ListingCardData[], sort: string): ListingCardData[] {
-  const sorted = [...rows]
-  if (sort === 'price_asc')  sorted.sort((a, b) => a.price - b.price)
-  if (sort === 'price_desc') sorted.sort((a, b) => b.price - a.price)
-  if (sort === 'km_asc')     sorted.sort((a, b) => (a.mileage ?? 999999) - (b.mileage ?? 999999))
-  if (sort === 'deal') {
-    const order = { great: 0, good: 1, fair: 2, suspicious: 3 }
-    sorted.sort((a, b) => (order[a.dealScore ?? 'fair'] ?? 2) - (order[b.dealScore ?? 'fair'] ?? 2))
-  }
-  return sorted
-}
-
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg0 },
+  safe: {
+    flex: 1,
+    backgroundColor: colors.bg0,
+  },
 
-  topBar: {
-    paddingHorizontal: spacing[4], paddingTop: spacing[3], paddingBottom: spacing[2],
-    borderBottomWidth: 0.5, borderBottomColor: colors.border1, zIndex: 10,
+  header: {
+    backgroundColor: colors.tintSearch,
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[4],
+    paddingBottom: spacing[3],
   },
-  searchRow: { flexDirection: 'row', gap: spacing[2], marginBottom: spacing[2], alignItems: 'center' },
+  headline: {
+    fontSize: 28,
+    fontFamily: fonts.bold,
+    color: colors.fg1,
+    textAlign: 'right',
+    marginBottom: spacing[3],
+  },
+
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    marginBottom: spacing[3],
+  },
   searchBar: {
-    flex: 1, flexDirection: 'row-reverse', alignItems: 'center',
-    backgroundColor: colors.bg1, borderRadius: radii.md,
-    borderWidth: 0.5, borderColor: colors.border2,
-    paddingHorizontal: spacing[4], height: 46,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.bg1,
+    borderRadius: radii.pill,
+    height: 52,
+    paddingHorizontal: spacing[4],
+    ...shadows.sm,
   },
-  searchInput: { flex: 1, color: colors.fg1, fontSize: fontSize.body, fontFamily: fonts.regular },
+  searchIcon: {
+    marginEnd: spacing[2],
+  },
+  searchInput: {
+    flex: 1,
+    color: colors.fg1,
+    fontSize: fontSize.body,
+    fontFamily: fonts.regular,
+    textAlign: 'right',
+  },
 
   suggestions: {
-    backgroundColor: colors.bg1, borderRadius: radii.md,
-    borderWidth: 0.5, borderColor: colors.border2,
-    marginBottom: spacing[2], overflow: 'hidden',
+    backgroundColor: colors.bg1,
+    borderRadius: radii.md,
+    marginBottom: spacing[2],
+    overflow: 'hidden',
+    ...shadows.sm,
   },
   suggRow: {
-    flexDirection: 'row-reverse', alignItems: 'center', gap: spacing[3],
-    paddingHorizontal: spacing[4], paddingVertical: 12,
-    borderBottomWidth: 0.5, borderBottomColor: colors.border1,
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: spacing[3],
+    paddingHorizontal: spacing[4],
+    paddingVertical: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: colors.border1,
   },
-  suggEn: { flex: 1, color: colors.fg1, fontSize: fontSize.body, fontFamily: fonts.medium, textAlign: 'right' },
-  suggHe: { color: colors.fg3, fontSize: fontSize.caption, fontFamily: fonts.regular },
-
-  sortRow: { gap: spacing[2], paddingBottom: spacing[2] },
-  sortChip: {
-    height: 30, paddingHorizontal: 14, borderRadius: radii.pill,
-    backgroundColor: colors.bg2, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 0.5, borderColor: colors.border2,
+  suggEn: {
+    flex: 1,
+    color: colors.fg1,
+    fontSize: fontSize.body,
+    fontFamily: fonts.medium,
+    textAlign: 'right',
   },
-  sortChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
-  sortChipText: { color: colors.fg3, fontSize: 11, fontFamily: fonts.medium },
-  sortChipTextActive: { color: '#fff', fontFamily: fonts.semibold },
-
-  count: { color: colors.fg3, fontSize: fontSize.caption, textAlign: 'right', paddingBottom: spacing[2] },
-
-  listContent: { paddingHorizontal: spacing[4], paddingTop: spacing[3], paddingBottom: 80 },
-  loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  endText: { color: colors.fg4, fontSize: fontSize.caption, textAlign: 'center', paddingVertical: 20 },
-
-  emptyWrap: { alignItems: 'center', paddingVertical: 64, gap: 12 },
-  emptyTitle: { color: colors.fg2, fontSize: fontSize.body, fontFamily: fonts.semibold },
-  emptyHint: { color: colors.fg3, fontSize: fontSize.caption, textAlign: 'center', lineHeight: 18, paddingHorizontal: 32 },
-  retryBtn: {
-    marginTop: 8, backgroundColor: colors.accentSoft, borderRadius: radii.pill,
-    paddingHorizontal: 24, paddingVertical: 10, borderWidth: 0.5, borderColor: colors.accent,
+  suggHe: {
+    color: colors.fg3,
+    fontSize: fontSize.caption,
+    fontFamily: fonts.regular,
   },
-  retryText: { color: colors.accent, fontFamily: fonts.semibold, fontSize: fontSize.body },
+
+  chipsRow: {
+    gap: spacing[2],
+    paddingBottom: spacing[1],
+  },
+  chip: {
+    height: 34,
+    paddingHorizontal: 16,
+    borderRadius: radii.pill,
+    backgroundColor: 'rgba(255,255,255,0.70)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chipActive: {
+    backgroundColor: colors.accent,
+  },
+  chipText: {
+    color: colors.fg1,
+    fontSize: fontSize.caption,
+    fontFamily: fonts.medium,
+  },
+  chipTextActive: {
+    color: colors.onAccent,
+    fontFamily: fonts.semibold,
+  },
+
+  sheet: {
+    flex: 1,
+    backgroundColor: colors.bg0,
+    borderTopLeftRadius: radii.xxl,
+    borderTopRightRadius: radii.xxl,
+    marginTop: -16,
+    overflow: 'hidden',
+  },
+
+  resultsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[4],
+    paddingBottom: spacing[3],
+  },
+  resultsCount: {
+    color: colors.fg2,
+    fontSize: fontSize.body,
+    fontFamily: fonts.regular,
+    textAlign: 'right',
+  },
+  resultsNumber: {
+    fontFamily: fonts.bold,
+    color: colors.fg1,
+  },
+  sortBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: radii.pill,
+    backgroundColor: colors.bg1,
+    borderWidth: 0.5,
+    borderColor: colors.border2,
+    ...shadows.sm,
+  },
+  sortBtnText: {
+    color: colors.fg1,
+    fontSize: fontSize.caption,
+    fontFamily: fonts.semibold,
+  },
+
+  loadingWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listContent: {
+    paddingHorizontal: spacing[4],
+    paddingBottom: 100,
+  },
+  endText: {
+    color: colors.fg4,
+    fontSize: fontSize.caption,
+    textAlign: 'center',
+    paddingVertical: 20,
+    fontFamily: fonts.regular,
+  },
+
+  emptyWrap: {
+    alignItems: 'center',
+    paddingVertical: 64,
+    gap: 12,
+  },
+  emptyTitle: {
+    color: colors.fg2,
+    fontSize: fontSize.body,
+    fontFamily: fonts.semibold,
+  },
+  resetBtn: {
+    marginTop: 8,
+    backgroundColor: colors.accent,
+    borderRadius: radii.pill,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+  },
+  resetBtnText: {
+    color: colors.onAccent,
+    fontFamily: fonts.semibold,
+    fontSize: fontSize.body,
+  },
+  retryLink: {
+    color: colors.accent,
+    fontFamily: fonts.semibold,
+    fontSize: fontSize.body,
+    textDecorationLine: 'underline',
+  },
+
+  sortOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'flex-end',
+  },
+  sortSheet: {
+    backgroundColor: colors.bg1,
+    borderTopLeftRadius: radii.xxl,
+    borderTopRightRadius: radii.xxl,
+    paddingHorizontal: spacing[4],
+    paddingBottom: spacing[9],
+    paddingTop: spacing[3],
+  },
+  sortHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: radii.pill,
+    backgroundColor: colors.border2,
+    alignSelf: 'center',
+    marginBottom: spacing[4],
+  },
+  sortOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: colors.border1,
+  },
+  sortOptionText: {
+    color: colors.fg2,
+    fontSize: fontSize.title,
+    fontFamily: fonts.regular,
+    textAlign: 'right',
+  },
+  sortOptionTextActive: {
+    color: colors.fg1,
+    fontFamily: fonts.bold,
+  },
+  sortActiveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: radii.pill,
+    backgroundColor: colors.accent,
+  },
 })

@@ -2,13 +2,13 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Image, Dimensions, Animated, Linking, ActivityIndicator,
-  StatusBar, Platform,
+  StatusBar, Modal, Platform,
 } from 'react-native'
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
-import { LinearGradient } from 'expo-linear-gradient'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg'
 import type { StackScreenProps } from '@react-navigation/stack'
-import { colors, spacing, fontSize, radii } from '../theme/tokens'
+import { colors, spacing, fontSize, radii, shadows } from '../theme/tokens'
 import { fonts } from '../theme/typography'
 import { MarketCompare } from '../components/MarketCompare'
 import { PriceHistoryChart } from '../components/PriceHistoryChart'
@@ -20,16 +20,26 @@ import type { RootStackParamList } from '../navigation/types'
 
 type Props = StackScreenProps<RootStackParamList, 'Detail'>
 
-const { width: SW, height: SH } = Dimensions.get('window')
-const HERO_H = SH * 0.46
+const { width: SW } = Dimensions.get('window')
+const GALLERY_H = 288
+
+const SOURCE_DOT: Record<string, string> = {
+  yad2: '#FF6B35',
+  homeless: '#6B35FF',
+  autoboom: '#35B0FF',
+  carwiz: '#35FF8A',
+}
 
 interface FullListing {
   id: string; make: string; model: string; year: number
   mileage: number | null; price: number; city: string | null
+  region?: string | null; seller?: string | null
+  trim?: string | null; hand?: number | null
+  engine?: string | null; power?: number | null; zeroToHundred?: number | null
   source: string; url: string; images: string[]; description: string | null
   createdAt: string
   priceHistory?: { date: string; price: number }[]
-  // enriched fields
+  priceDelta?: number | null
   daysOnLot?: number; odometerSuspicious?: boolean; odometerReason?: string | null
   redFlags?: string[]; dealScore?: 'great' | 'good' | 'fair' | 'suspicious'
   condition?: { score: number; grade: 'A'|'B'|'C'|'D'|'F'; label: string }
@@ -46,11 +56,11 @@ interface FullListing {
   salvage?: { salvageRisk: boolean; signals: string[] }
 }
 
-const DEAL_LABEL: Record<string, { color: string; bg: string; label: string; icon: string }> = {
-  great:      { color: '#34D399', bg: '#0D2E1A', label: 'עסקה מצוינת', icon: 'checkmark-circle' },
-  good:       { color: '#6EE7B7', bg: '#0D2A1A', label: 'עסקה טובה',   icon: 'thumbs-up' },
-  fair:       { color: colors.fg2, bg: colors.bg2, label: 'מחיר שוק',   icon: 'remove-circle-outline' },
-  suspicious: { color: colors.warning, bg: '#2A1A08', label: 'חשוד',    icon: 'warning' },
+const DEAL_CONFIG: Record<string, { color: string; bg: string; label: string }> = {
+  great:      { color: colors.success,  bg: colors.successSoft, label: 'עסקה מצוינת' },
+  good:       { color: colors.success,  bg: colors.successSoft, label: 'עסקה טובה' },
+  fair:       { color: colors.fg3,      bg: colors.tintDetail,  label: 'מחיר שוק' },
+  suspicious: { color: colors.warning,  bg: colors.warningSoft, label: 'חשוד' },
 }
 
 export function DetailScreen({ route, navigation }: Props) {
@@ -58,6 +68,9 @@ export function DetailScreen({ route, navigation }: Props) {
   const [listing, setListing] = useState<FullListing | null>(null)
   const [loading, setLoading] = useState(true)
   const [imgIdx, setImgIdx] = useState(0)
+  const [financeOpen, setFinanceOpen] = useState(false)
+  const [downPayment, setDownPayment] = useState(20)
+  const [months, setMonths] = useState(60)
   const scrollX = useRef(new Animated.Value(0)).current
   const insets = useSafeAreaInsets()
   const saved = useSaved()
@@ -77,7 +90,7 @@ export function DetailScreen({ route, navigation }: Props) {
   if (loading) {
     return (
       <View style={s.centered}>
-        <StatusBar barStyle="light-content" />
+        <StatusBar barStyle="dark-content" />
         <ActivityIndicator size="large" color={colors.accent} />
       </View>
     )
@@ -86,6 +99,7 @@ export function DetailScreen({ route, navigation }: Props) {
   if (!listing) {
     return (
       <View style={s.centered}>
+        <StatusBar barStyle="dark-content" />
         <Ionicons name="alert-circle-outline" size={52} color={colors.fg4} />
         <Text style={s.errorText}>המודעה לא נמצאה</Text>
         <TouchableOpacity style={s.backLink} onPress={() => navigation.goBack()}>
@@ -96,107 +110,181 @@ export function DetailScreen({ route, navigation }: Props) {
   }
 
   const images = listing.images.length > 0 ? listing.images : ['']
-  const deal = DEAL_LABEL[listing.dealScore ?? 'fair']
+  const deal = DEAL_CONFIG[listing.dealScore ?? 'fair']
   const km = listing.mileage?.toLocaleString('he-IL')
   const price = listing.price.toLocaleString('he-IL')
+  const sourceDotColor = SOURCE_DOT[listing.source] ?? colors.fg4
+  const priceDeltaAbs = listing.priceDelta ? Math.abs(listing.priceDelta).toLocaleString('he-IL') : null
+  const marketPct = listing.market?.priceDiffPct ?? null
+  const marketAvg = listing.market?.avgMarketPrice?.toLocaleString('he-IL') ?? null
+
+  const loanPrincipal = listing.price * (1 - downPayment / 100)
+  const monthlyRate = 0.06 / 12
+  const monthlyPayment = loanPrincipal > 0 && months > 0
+    ? Math.round(loanPrincipal * monthlyRate / (1 - Math.pow(1 + monthlyRate, -months)))
+    : 0
+  const totalPayment = monthlyPayment * months
+
+  const gaugeLabel =
+    marketPct == null ? '' :
+    marketPct < -8 ? 'מחיר מעולה' :
+    marketPct < 5  ? 'מחיר סביר'  : 'מעל מחירון'
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg0 }}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        stickyHeaderIndices={[]}
-        bounces={false}
-      >
-        {/* ── Hero Gallery ── */}
-        <View style={{ height: HERO_H }}>
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], { useNativeDriver: false })}
-            onMomentumScrollEnd={(e: any) => setImgIdx(Math.round(e.nativeEvent.contentOffset.x / SW))}
-            scrollEventThrottle={16}
-          >
-            {images.map((uri: string, i: number) => (
-              <View key={i} style={{ width: SW, height: HERO_H }}>
-                {uri ? (
-                  <Image source={{ uri }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
-                ) : (
-                  <View style={s.imgFallback}>
-                    <Ionicons name="car-sport-outline" size={72} color={colors.fg4} />
-                  </View>
-                )}
-              </View>
-            ))}
-          </ScrollView>
+      <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
 
-          {/* Deep gradient scrim at bottom of hero */}
-          <LinearGradient
-            colors={['transparent', 'rgba(6,8,11,0.6)', colors.bg0]}
-            style={s.heroScrim}
-          />
-
-          {/* Top controls — back + save */}
-          <View style={[s.heroControls, { paddingTop: insets.top + 8 }]}>
-            <TouchableOpacity style={s.heroBtn} onPress={() => navigation.goBack()}>
-              <Ionicons name="chevron-back" size={22} color="#fff" />
-            </TouchableOpacity>
-            <TouchableOpacity style={[s.heroBtn, isSavedNow && s.heroBtnSaved]} onPress={handleSave}>
-              <Ionicons
-                name={isSavedNow ? 'heart' : 'heart-outline'}
-                size={20}
-                color={isSavedNow ? colors.danger : '#fff'}
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* Image count / dots */}
-          {images.length > 1 && (
-            <View style={s.dotsRow}>
-              {images.map((_: string, i: number) => (
-                <View key={i} style={[s.dot, i === imgIdx && s.dotActive]} />
+        {/* 1 — TINTED HERO */}
+        <View style={{ backgroundColor: colors.tintDetail }}>
+          <View style={{ height: GALLERY_H }}>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onScroll={Animated.event(
+                [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+                { useNativeDriver: false }
+              )}
+              onMomentumScrollEnd={(e: any) =>
+                setImgIdx(Math.round(e.nativeEvent.contentOffset.x / SW))
+              }
+              scrollEventThrottle={16}
+            >
+              {images.map((uri: string, i: number) => (
+                <View key={i} style={{ width: SW, height: GALLERY_H }}>
+                  {uri ? (
+                    <Image
+                      source={{ uri }}
+                      style={StyleSheet.absoluteFillObject}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={s.imgFallback}>
+                      <Ionicons name="car-sport-outline" size={72} color={colors.fg4} />
+                    </View>
+                  )}
+                </View>
               ))}
-            </View>
-          )}
+            </ScrollView>
 
-          {/* Source badge */}
-          <View style={s.sourceBadge}>
-            <Ionicons name="globe-outline" size={10} color="rgba(255,255,255,0.7)" />
-            <Text style={s.sourceText}>{listing.source}</Text>
+            {/* Image counter pill */}
+            {images.length > 1 && (
+              <View style={s.counterPill}>
+                <Text style={s.counterText}>{imgIdx + 1}/{images.length}</Text>
+              </View>
+            )}
+
+            {/* Dot indicators */}
+            {images.length > 1 && (
+              <View style={s.dotsRow}>
+                {images.map((_: string, i: number) => (
+                  <View
+                    key={i}
+                    style={[
+                      s.dot,
+                      i === imgIdx ? s.dotActive : s.dotInactive,
+                    ]}
+                  />
+                ))}
+              </View>
+            )}
+
+            {/* Source badge — below header area */}
+            <View style={[s.sourceBadge, { top: insets.top + 56 }]}>
+              <View style={[s.sourceDot, { backgroundColor: sourceDotColor }]} />
+              <Text style={s.sourceBadgeText}>{listing.source}</Text>
+            </View>
           </View>
         </View>
 
-        {/* ── Content ── */}
-        <View style={s.content}>
+        {/* 2 — WHITE SHEET LIFTING */}
+        <View style={s.sheet}>
 
-          {/* Car name + deal badge */}
-          <View style={s.nameRow}>
-            <View style={[s.dealBadge, { backgroundColor: deal.bg }]}>
-              <Ionicons name={deal.icon as any} size={11} color={deal.color} />
-              <Text style={[s.dealText, { color: deal.color }]}>{deal.label}</Text>
+          {/* Title row */}
+          <View style={s.titleRow}>
+            <View style={s.titleLeft}>
+              <Text style={s.carName} numberOfLines={1}>
+                {listing.make} {listing.model}
+              </Text>
+              {(listing.trim || listing.hand) && (
+                <Text style={s.trimSub}>
+                  {[listing.trim, listing.hand ? `יד ${listing.hand}` : null]
+                    .filter(Boolean).join(' · ')}
+                </Text>
+              )}
             </View>
-            <Text style={s.carName}>{listing.make} {listing.model}</Text>
-          </View>
-
-          {/* Price — hero number */}
-          <Text style={s.price}>₪{price}</Text>
-
-          {/* Stat chips row */}
-          <View style={s.chipsRow}>
-            <StatChip icon="calendar-outline" value={listing.year.toString()} />
-            {km && <StatChip icon="speedometer-outline" value={`${km} ק״מ`} alert={listing.odometerSuspicious} />}
-            {listing.city && <StatChip icon="location-outline" value={listing.city} />}
-            {listing.daysOnLot !== undefined && listing.daysOnLot > 0 && (
-              <StatChip icon="time-outline" value={`${listing.daysOnLot} ימים`} />
+            {listing.dealScore && listing.dealScore !== 'fair' && (
+              <View style={[s.dealBadge, { backgroundColor: deal.bg }]}>
+                <Text style={[s.dealBadgeText, { color: deal.color }]}>{deal.label}</Text>
+              </View>
             )}
           </View>
 
-          {/* ── Condition + Anomaly row ── */}
+          {/* PRICE CARD */}
+          <View style={[s.card, s.priceCard]}>
+            <Text style={s.eyebrow}>מחיר</Text>
+            <View style={s.priceMainRow}>
+              <Text style={s.bigPrice}>₪{price}</Text>
+              {listing.priceDelta && listing.priceDelta < 0 && (
+                <View style={s.priceDrop}>
+                  <Text style={s.priceDropText}>↓ ₪{priceDeltaAbs}</Text>
+                </View>
+              )}
+            </View>
+            {listing.priceDelta && listing.priceDelta < 0 && (
+              <Text style={s.priceDropSub}>ירדה לפני 2 ימים</Text>
+            )}
+
+            <View style={s.divider} />
+
+            {/* Price Gauge */}
+            {marketPct != null && (
+              <View style={s.gaugeWrap}>
+                <PriceGauge pct={marketPct} />
+                <Text style={s.gaugeLabel}>{gaugeLabel}</Text>
+                {marketAvg && (
+                  <Text style={s.gaugeDetail}>
+                    {marketPct > 0 ? '+' : ''}{Math.round(marketPct)}% · מחירון ₪{marketAvg}
+                  </Text>
+                )}
+              </View>
+            )}
+          </View>
+
+          {/* SPEC GRID */}
+          <View style={[s.card, { padding: 0, overflow: 'hidden' }]}>
+            <View style={s.specGrid}>
+              {[
+                { label: 'שנה', value: listing.year.toString() },
+                { label: 'ק״מ', value: km ? `${km}` : '—' },
+                { label: 'יד', value: listing.hand ? listing.hand.toString() : '—' },
+                { label: 'מנוע', value: listing.engine ?? '—' },
+                { label: 'כ״ס', value: listing.power ? `${listing.power}` : '—' },
+                { label: '0–100', value: listing.zeroToHundred ? `${listing.zeroToHundred}ש` : '—' },
+              ].map((item, i) => (
+                <View key={i} style={s.specTile}>
+                  <Text style={s.specEyebrow}>{item.label}</Text>
+                  <Text style={s.specValue}>{item.value}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* PRICE HISTORY CARD */}
+          {listing.priceHistory && listing.priceHistory.length > 0 && (
+            <View style={s.card}>
+              <Text style={s.cardTitle}>היסטוריית מחיר</Text>
+              <Text style={s.eyebrow}>30 ימים אחרונים</Text>
+              <PriceHistoryChart snapshots={listing.priceHistory} />
+            </View>
+          )}
+
+          {/* CONDITION + ANOMALY */}
           {(listing.condition || listing.anomaly) && (
-            <View style={s.section}>
-              <SectionTitle>ניתוח מצב</SectionTitle>
+            <View style={s.card}>
+              <Text style={s.cardTitle}>ניתוח מצב</Text>
               {listing.condition && (
                 <ConditionBadge
                   score={listing.condition.score}
@@ -204,217 +292,402 @@ export function DetailScreen({ route, navigation }: Props) {
                   label={listing.condition.label}
                 />
               )}
-              {listing.anomaly && (
-                <AnomalyBadge anomaly={listing.anomaly} />
-              )}
+              {listing.anomaly && <AnomalyBadge anomaly={listing.anomaly} />}
             </View>
           )}
 
-          {/* ── Market comparison ── */}
+          {/* MARKET COMPARISON */}
           {listing.market && listing.market.priceRating !== 'unknown' && (
-            <View style={s.section}>
-              <SectionTitle>השוואת שוק</SectionTitle>
+            <View style={s.card}>
+              <Text style={s.cardTitle}>השוואת שוק</Text>
               <MarketCompare market={listing.market} currentPrice={listing.price} />
             </View>
           )}
 
-          {/* ── Price history ── */}
-          {listing.priceHistory && listing.priceHistory.length > 0 && (
-            <View style={s.section}>
-              <SectionTitle>היסטוריית מחיר</SectionTitle>
-              <PriceHistoryChart snapshots={listing.priceHistory} />
-            </View>
-          )}
-
-          {/* ── Red flags ── */}
+          {/* RED FLAGS */}
           {listing.redFlags && listing.redFlags.length > 0 && (
-            <View style={s.section}>
-              <SectionTitle>דגלים אדומים</SectionTitle>
-              <View style={s.flagsCard}>
-                {listing.redFlags.map((flag: string, i: number) => (
-                  <View key={i} style={s.flagRow}>
-                    <Ionicons name="alert-circle-outline" size={14} color={colors.warning} />
-                    <Text style={s.flagText}>{flag}</Text>
-                  </View>
-                ))}
-              </View>
+            <View style={[s.card, s.flagsCard]}>
+              <Text style={[s.cardTitle, { color: colors.warning }]}>דגלים אדומים</Text>
+              {listing.redFlags.map((flag: string, i: number) => (
+                <View key={i} style={s.flagRow}>
+                  <Ionicons name="alert-circle-outline" size={14} color={colors.warning} />
+                  <Text style={s.flagText}>{flag}</Text>
+                </View>
+              ))}
             </View>
           )}
 
-          {/* ── Salvage ── */}
+          {/* SALVAGE */}
           {listing.salvage?.salvageRisk && (
-            <View style={s.section}>
-              <View style={s.salvageBanner}>
-                <Ionicons name="warning" size={18} color={colors.danger} />
-                <Text style={s.salvageText}>סיכון גנוב / ג׳נק — בדוק לפני רכישה</Text>
-              </View>
+            <View style={[s.card, s.salvageBanner]}>
+              <Ionicons name="warning" size={18} color={colors.danger} />
+              <Text style={s.salvageText}>סיכון גנוב / ג׳נק — בדוק לפני רכישה</Text>
             </View>
           )}
 
-          {/* ── Description ── */}
+          {/* DESCRIPTION */}
           {listing.description && listing.description.trim().length > 0 && (
-            <View style={s.section}>
-              <SectionTitle>תיאור</SectionTitle>
-              <View style={s.descCard}>
-                <Text style={s.descText}>{listing.description}</Text>
+            <View style={s.card}>
+              <Text style={s.descText}>{listing.description}</Text>
+            </View>
+          )}
+
+          {/* LOCATION */}
+          {(listing.city || listing.region || listing.seller) && (
+            <View style={s.card}>
+              <View style={s.locationRow}>
+                <View style={s.locationIcon}>
+                  <Ionicons name="location" size={16} color={colors.accent} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  {listing.city && (
+                    <Text style={s.locationCity}>
+                      {listing.city}{listing.region ? `, ${listing.region}` : ''}
+                    </Text>
+                  )}
+                  {listing.seller && (
+                    <Text style={s.locationSeller}>{listing.seller}</Text>
+                  )}
+                </View>
               </View>
             </View>
           )}
 
-          {/* Bottom spacer for sticky CTA */}
-          <View style={{ height: 100 }} />
+          <View style={{ height: 120 }} />
         </View>
       </ScrollView>
 
-      {/* ── Sticky CTA ── */}
-      <View style={[s.ctaBar, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-        <TouchableOpacity style={s.ctaBtn} onPress={openListing} activeOpacity={0.88}>
-          <LinearGradient
-            colors={['#E8943A', '#C47B2E']}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-            style={s.ctaGradient}
+      {/* Absolute header overlay */}
+      <View style={[s.headerOverlay, { paddingTop: insets.top + 8 }]} pointerEvents="box-none">
+        <TouchableOpacity style={s.headerCircle} onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={22} color={colors.fg1} />
+        </TouchableOpacity>
+        <View style={s.headerRight}>
+          <TouchableOpacity style={s.headerCircle}>
+            <Ionicons name="share-outline" size={20} color={colors.fg1} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[s.headerCircle, isSavedNow && s.headerCircleSaved]}
+            onPress={handleSave}
           >
-            <Ionicons name="open-outline" size={18} color="#fff" />
-            <Text style={s.ctaText}>פתח מודעה מקורית</Text>
-          </LinearGradient>
+            <Ionicons
+              name={isSavedNow ? 'heart' : 'heart-outline'}
+              size={20}
+              color={isSavedNow ? colors.danger : colors.fg1}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* 3 — STICKY BOTTOM */}
+      <View style={[s.stickyBottom, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+        <TouchableOpacity
+          style={s.financeBtn}
+          onPress={() => setFinanceOpen(true)}
+          activeOpacity={0.85}
+        >
+          <Text style={s.financeBtnEye}>החל מ-</Text>
+          <Text style={s.financeBtnPrice}>₪{monthlyPayment.toLocaleString('he-IL')} / חודש</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={s.ctaBtn} onPress={openListing} activeOpacity={0.88}>
+          <Ionicons name="open-outline" size={18} color={colors.onAccent} />
+          <Text style={s.ctaText}>פתח מודעה מקורית</Text>
         </TouchableOpacity>
       </View>
+
+      {/* 4 — FINANCE MODAL */}
+      <Modal
+        visible={financeOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setFinanceOpen(false)}
+      >
+        <TouchableOpacity
+          style={s.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setFinanceOpen(false)}
+        />
+        <View style={[s.financeSheet, { paddingBottom: Math.max(insets.bottom, 24) }]}>
+          <View style={s.financeHandle} />
+          <Text style={s.financeTitle}>מחשבון מימון</Text>
+
+          <View style={s.paymentDisplayCard}>
+            <Text style={s.paymentEyebrow}>תשלום חודשי משוער</Text>
+            <Text style={s.paymentBig}>₪{monthlyPayment.toLocaleString('he-IL')}</Text>
+            <Text style={s.paymentTotal}>
+              סה״כ: ₪{totalPayment.toLocaleString('he-IL')} · {months} חודשים
+            </Text>
+          </View>
+
+          <View style={s.sliderBlock}>
+            <View style={s.sliderLabelRow}>
+              <Text style={s.sliderLabel}>מקדמה</Text>
+              <Text style={s.sliderValue}>{downPayment}%</Text>
+            </View>
+            <View style={s.sliderTrack}>
+              <View style={[s.sliderFill, { width: `${downPayment}%` }]} />
+              <TouchableOpacity
+                style={[s.sliderThumb, { left: `${downPayment}%` as any }]}
+                onPress={() => {}}
+              />
+            </View>
+            <View style={s.sliderRow}>
+              {[10, 20, 30, 40, 50].map(v => (
+                <TouchableOpacity
+                  key={v}
+                  style={[s.sliderPip, downPayment === v && s.sliderPipActive]}
+                  onPress={() => setDownPayment(v)}
+                >
+                  <Text style={[s.sliderPipText, downPayment === v && s.sliderPipTextActive]}>
+                    {v}%
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <View style={s.sliderBlock}>
+            <View style={s.sliderLabelRow}>
+              <Text style={s.sliderLabel}>תקופה</Text>
+              <Text style={s.sliderValue}>{months} חודשים</Text>
+            </View>
+            <View style={s.sliderRow}>
+              {[12, 24, 36, 48, 60, 72, 84].map(v => (
+                <TouchableOpacity
+                  key={v}
+                  style={[s.sliderPip, months === v && s.sliderPipActive]}
+                  onPress={() => setMonths(v)}
+                >
+                  <Text style={[s.sliderPipText, months === v && s.sliderPipTextActive]}>
+                    {v}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   )
 }
 
-function StatChip({ icon, value, alert }: { icon: any; value: string; alert?: boolean }) {
+function PriceGauge({ pct }: { pct: number }) {
+  const W = SW - 64
+  const H = W * 0.5
+  const cx = W / 2
+  const cy = H
+  const r = H - 12
+  const clampedPct = Math.max(-30, Math.min(30, pct))
+  const normalised = (clampedPct + 30) / 60
+  const angle = Math.PI + normalised * Math.PI
+  const nx = cx + r * Math.cos(angle)
+  const ny = cy + r * Math.sin(angle)
+  const arcGreen = describeArc(cx, cy, r, 180, 240)
+  const arcYellow = describeArc(cx, cy, r, 240, 300)
+  const arcRed = describeArc(cx, cy, r, 300, 360)
   return (
-    <View style={[sc.chip, alert && sc.chipAlert]}>
-      <Ionicons name={icon} size={12} color={alert ? colors.warning : colors.fg3} />
-      <Text style={[sc.chipText, alert && sc.chipTextAlert]}>{value}</Text>
-    </View>
+    <Svg width={W} height={H + 12} viewBox={`0 0 ${W} ${H + 12}`}>
+      <Path d={arcGreen}  stroke={colors.success}  strokeWidth={12} fill="none" strokeLinecap="round" />
+      <Path d={arcYellow} stroke={colors.warning}  strokeWidth={12} fill="none" strokeLinecap="round" />
+      <Path d={arcRed}    stroke={colors.danger}   strokeWidth={12} fill="none" strokeLinecap="round" />
+      <Path
+        d={`M ${cx} ${cy} L ${nx} ${ny}`}
+        stroke={colors.fg1}
+        strokeWidth={2.5}
+        strokeLinecap="round"
+      />
+      <Path d="" fill={colors.fg1} />
+    </Svg>
   )
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <View style={st.row}>
-      <Text style={st.text}>{children}</Text>
-      <View style={st.line} />
-    </View>
-  )
+function describeArc(cx: number, cy: number, r: number, startDeg: number, endDeg: number) {
+  const toRad = (d: number) => (d * Math.PI) / 180
+  const x1 = cx + r * Math.cos(toRad(startDeg))
+  const y1 = cy + r * Math.sin(toRad(startDeg))
+  const x2 = cx + r * Math.cos(toRad(endDeg))
+  const y2 = cy + r * Math.sin(toRad(endDeg))
+  return `M ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2}`
 }
-
-const sc = StyleSheet.create({
-  chip: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: colors.bg2,
-    borderRadius: radii.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderWidth: 0.5,
-    borderColor: colors.border2,
-  },
-  chipAlert: {
-    backgroundColor: '#2A1A08',
-    borderColor: colors.warning,
-  },
-  chipText: { color: colors.fg2, fontSize: 12, fontFamily: fonts.medium },
-  chipTextAlert: { color: colors.warning },
-})
-
-const st = StyleSheet.create({
-  row: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12, marginBottom: spacing[3] },
-  text: { color: colors.fg3, fontSize: fontSize.caption, fontFamily: fonts.semibold, letterSpacing: 0.5 },
-  line: { flex: 1, height: 0.5, backgroundColor: colors.border2 },
-})
 
 const s = StyleSheet.create({
-  centered: { flex: 1, backgroundColor: colors.bg0, alignItems: 'center', justifyContent: 'center', gap: 16 },
+  centered: {
+    flex: 1, backgroundColor: colors.bg0,
+    alignItems: 'center', justifyContent: 'center', gap: 16,
+  },
   errorText: { color: colors.fg2, fontSize: fontSize.title, fontFamily: fonts.medium },
   backLink: { marginTop: 8 },
   backLinkText: { color: colors.accent, fontFamily: fonts.medium, fontSize: fontSize.body },
 
   imgFallback: {
-    flex: 1, backgroundColor: colors.bg2, alignItems: 'center', justifyContent: 'center',
-  },
-  heroScrim: {
-    position: 'absolute', bottom: 0, left: 0, right: 0, height: '55%',
-  },
-  heroControls: {
-    position: 'absolute', top: 0, left: 0, right: 0,
-    flexDirection: 'row', justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-  },
-  heroBtn: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    backdropFilter: 'blur(12px)',
+    flex: 1, backgroundColor: colors.bg2,
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.15)',
   },
-  heroBtnSaved: {
-    backgroundColor: 'rgba(220,38,38,0.3)',
-    borderColor: 'rgba(220,38,38,0.5)',
+
+  counterPill: {
+    position: 'absolute', bottom: 14, left: 14,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderRadius: radii.pill,
+    paddingHorizontal: 10, paddingVertical: 4,
   },
+  counterText: {
+    fontSize: fontSize.caption, color: colors.fg1,
+    fontFamily: fonts.medium,
+  },
+
   dotsRow: {
     position: 'absolute', bottom: 14,
     left: 0, right: 0,
     flexDirection: 'row', justifyContent: 'center', gap: 5,
   },
-  dot: {
-    width: 5, height: 5, borderRadius: 2.5,
-    backgroundColor: 'rgba(255,255,255,0.35)',
-  },
-  dotActive: { width: 16, backgroundColor: '#fff' },
+  dot: { height: 5, borderRadius: 2.5 },
+  dotActive: { width: 16, backgroundColor: colors.accent },
+  dotInactive: { width: 5, backgroundColor: 'rgba(255,255,255,0.60)' },
+
   sourceBadge: {
-    position: 'absolute', top: 14, right: 14,
-    // pushes down by insets handled by parent
-    flexDirection: 'row-reverse', gap: 4, alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    position: 'absolute', left: 14,
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.90)',
     borderRadius: radii.pill,
     paddingHorizontal: 10, paddingVertical: 4,
-    borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.12)',
-    marginTop: 40,
   },
-  sourceText: { fontSize: 10, color: 'rgba(255,255,255,0.75)', fontFamily: fonts.medium },
-
-  content: { paddingHorizontal: spacing[4], paddingTop: spacing[4] },
-
-  nameRow: {
-    flexDirection: 'row-reverse', alignItems: 'center',
-    justifyContent: 'space-between', marginBottom: spacing[1],
+  sourceDot: { width: 7, height: 7, borderRadius: 3.5 },
+  sourceBadgeText: {
+    fontSize: fontSize.caption, color: colors.fg2, fontFamily: fonts.medium,
   },
+
+  headerOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0,
+    zIndex: 10,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 16, paddingBottom: 8,
+  },
+  headerRight: { flexDirection: 'row', gap: 8 },
+  headerCircle: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center', justifyContent: 'center',
+    ...shadows.sm,
+  },
+  headerCircleSaved: {
+    backgroundColor: colors.dangerSoft,
+  },
+
+  sheet: {
+    backgroundColor: colors.bg0,
+    borderTopLeftRadius: radii.xxl,
+    borderTopRightRadius: radii.xxl,
+    marginTop: -20,
+    paddingTop: 22,
+    paddingHorizontal: spacing[4],
+  },
+
+  titleRow: {
+    flexDirection: 'row-reverse', alignItems: 'flex-start',
+    justifyContent: 'space-between', marginBottom: spacing[4],
+  },
+  titleLeft: { flex: 1, alignItems: 'flex-end' },
   carName: {
-    color: colors.fg1, fontSize: 22, fontFamily: fonts.bold,
-    letterSpacing: -0.4, textAlign: 'right', flex: 1,
+    color: colors.fg1, fontSize: fontSize.display2,
+    fontFamily: fonts.bold, letterSpacing: -0.5, textAlign: 'right',
+  },
+  trimSub: {
+    color: colors.fg3, fontSize: fontSize.caption,
+    fontFamily: fonts.regular, textAlign: 'right', marginTop: 3,
   },
   dealBadge: {
-    flexDirection: 'row-reverse', alignItems: 'center', gap: 4,
+    borderRadius: radii.pill, paddingHorizontal: 12, paddingVertical: 5,
+    marginStart: 12, marginTop: 4,
+  },
+  dealBadgeText: { fontSize: fontSize.caption, fontFamily: fonts.semibold },
+
+  card: {
+    backgroundColor: colors.bg1,
+    borderRadius: radii.xxl,
+    padding: 22,
+    marginBottom: spacing[4],
+    ...shadows.sm,
+  },
+  priceCard: {},
+
+  eyebrow: {
+    fontSize: fontSize.caption, color: colors.fg3,
+    fontFamily: fonts.semibold, textAlign: 'right',
+    textTransform: 'uppercase', letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+  cardTitle: {
+    fontSize: fontSize.headline, color: colors.fg1,
+    fontFamily: fonts.bold, textAlign: 'right', marginBottom: 4,
+  },
+
+  priceMainRow: {
+    flexDirection: 'row-reverse', alignItems: 'center',
+    gap: 10, marginBottom: 4,
+  },
+  bigPrice: {
+    fontSize: 38, color: colors.fg1,
+    fontFamily: fonts.bold, letterSpacing: -1,
+  },
+  priceDrop: {
+    backgroundColor: colors.successSoft,
     borderRadius: radii.pill,
-    paddingHorizontal: 10, paddingVertical: 5,
-    marginStart: 12,
+    paddingHorizontal: 10, paddingVertical: 4,
   },
-  dealText: { fontSize: 11, fontFamily: fonts.semibold },
-
-  price: {
-    color: colors.fg1, fontSize: 36, fontFamily: fonts.bold,
-    letterSpacing: -1, textAlign: 'right', marginBottom: spacing[4],
+  priceDropText: {
+    fontSize: fontSize.caption, color: colors.success,
+    fontFamily: fonts.semibold,
+  },
+  priceDropSub: {
+    fontSize: fontSize.caption, color: colors.fg3,
+    fontFamily: fonts.regular, textAlign: 'right', marginBottom: 14,
   },
 
-  chipsRow: {
+  divider: {
+    height: 1, backgroundColor: colors.border1, marginVertical: 16,
+  },
+
+  gaugeWrap: { alignItems: 'center', gap: 6 },
+  gaugeLabel: {
+    fontSize: fontSize.title, color: colors.fg1,
+    fontFamily: fonts.semibold,
+  },
+  gaugeDetail: {
+    fontSize: fontSize.caption, color: colors.fg3,
+    fontFamily: fonts.regular,
+  },
+
+  specGrid: {
     flexDirection: 'row-reverse', flexWrap: 'wrap',
-    gap: spacing[2], marginBottom: spacing[5],
+    gap: 8, padding: 10,
   },
-
-  section: { marginBottom: spacing[5] },
+  specTile: {
+    backgroundColor: colors.bg2,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+    minWidth: (SW - 32 - 20 - 16) / 3,
+    flex: 1,
+  },
+  specEyebrow: {
+    fontSize: fontSize.caption - 1, color: colors.fg3,
+    fontFamily: fonts.medium, textTransform: 'uppercase',
+    letterSpacing: 0.4, marginBottom: 4,
+  },
+  specValue: {
+    fontSize: fontSize.title, color: colors.fg1,
+    fontFamily: fonts.bold,
+  },
 
   flagsCard: {
-    backgroundColor: '#1A1206',
-    borderRadius: radii.lg,
-    borderWidth: 0.5, borderColor: 'rgba(217,119,6,0.3)',
-    padding: spacing[4], gap: spacing[3],
+    backgroundColor: colors.warningSoft,
+    borderWidth: 1, borderColor: 'rgba(176,122,26,0.25)',
+    gap: spacing[3],
   },
-  flagRow: { flexDirection: 'row-reverse', alignItems: 'flex-start', gap: spacing[2] },
+  flagRow: {
+    flexDirection: 'row-reverse', alignItems: 'flex-start', gap: spacing[2],
+  },
   flagText: {
     flex: 1, color: colors.warning, fontSize: fontSize.caption,
     fontFamily: fonts.regular, textAlign: 'right', lineHeight: 18,
@@ -422,35 +695,151 @@ const s = StyleSheet.create({
 
   salvageBanner: {
     flexDirection: 'row-reverse', alignItems: 'center', gap: spacing[3],
-    backgroundColor: '#1A0A0A',
-    borderRadius: radii.lg, borderWidth: 0.5, borderColor: 'rgba(220,38,38,0.4)',
-    padding: spacing[4],
+    backgroundColor: colors.dangerSoft,
+    borderWidth: 1, borderColor: 'rgba(184,58,42,0.25)',
   },
   salvageText: {
     flex: 1, color: colors.danger, fontSize: fontSize.caption,
     fontFamily: fonts.semibold, textAlign: 'right',
   },
 
-  descCard: {
-    backgroundColor: colors.bg1, borderRadius: radii.lg,
-    borderWidth: 0.5, borderColor: colors.border2, padding: spacing[4],
-  },
   descText: {
     color: colors.fg2, fontSize: fontSize.body,
     fontFamily: fonts.regular, lineHeight: 22, textAlign: 'right',
   },
 
-  ctaBar: {
+  locationRow: {
+    flexDirection: 'row-reverse', alignItems: 'flex-start', gap: 12,
+  },
+  locationIcon: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  locationCity: {
+    fontSize: fontSize.title, color: colors.fg1,
+    fontFamily: fonts.semibold, textAlign: 'right',
+  },
+  locationSeller: {
+    fontSize: fontSize.caption, color: colors.fg3,
+    fontFamily: fonts.regular, textAlign: 'right', marginTop: 2,
+  },
+
+  stickyBottom: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     paddingHorizontal: spacing[4],
     paddingTop: spacing[3],
-    backgroundColor: colors.bg0,
-    borderTopWidth: 0.5, borderTopColor: colors.border1,
+    backgroundColor: 'rgba(245,242,234,0.92)',
+    borderTopWidth: 1, borderTopColor: colors.border1,
+    flexDirection: 'row-reverse', gap: 10, alignItems: 'center',
   },
-  ctaBtn: { borderRadius: radii.md, overflow: 'hidden' },
-  ctaGradient: {
-    flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center',
-    gap: 10, height: 52,
+  financeBtn: {
+    flex: 1,
+    backgroundColor: colors.bg1,
+    borderRadius: radii.pill,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: colors.border2,
+    ...shadows.sm,
   },
-  ctaText: { color: '#fff', fontFamily: fonts.bold, fontSize: fontSize.title },
+  financeBtnEye: {
+    fontSize: fontSize.caption - 1, color: colors.fg3,
+    fontFamily: fonts.regular,
+  },
+  financeBtnPrice: {
+    fontSize: fontSize.title, color: colors.fg1,
+    fontFamily: fonts.bold,
+  },
+  ctaBtn: {
+    flexDirection: 'row-reverse', alignItems: 'center',
+    justifyContent: 'center', gap: 8,
+    backgroundColor: colors.accent,
+    borderRadius: radii.pill,
+    paddingVertical: 14, paddingHorizontal: 22,
+    ...shadows.sm,
+  },
+  ctaText: {
+    color: colors.onAccent, fontFamily: fonts.bold, fontSize: fontSize.title,
+  },
+
+  modalBackdrop: {
+    flex: 1, backgroundColor: 'rgba(27,30,27,0.35)',
+  },
+  financeSheet: {
+    backgroundColor: colors.bg1,
+    borderTopLeftRadius: radii.xxl,
+    borderTopRightRadius: radii.xxl,
+    paddingHorizontal: spacing[5],
+    paddingTop: 16,
+  },
+  financeHandle: {
+    width: 36, height: 4, borderRadius: 2,
+    backgroundColor: colors.border2,
+    alignSelf: 'center', marginBottom: 16,
+  },
+  financeTitle: {
+    fontSize: fontSize.headline, color: colors.fg1,
+    fontFamily: fonts.bold, textAlign: 'right', marginBottom: 20,
+  },
+  paymentDisplayCard: {
+    backgroundColor: colors.accentSoft,
+    borderRadius: radii.xl,
+    padding: 20, alignItems: 'center',
+    marginBottom: 24,
+  },
+  paymentEyebrow: {
+    fontSize: fontSize.caption, color: colors.accent,
+    fontFamily: fonts.semibold,
+    textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8,
+  },
+  paymentBig: {
+    fontSize: 36, color: colors.accent,
+    fontFamily: fonts.bold, letterSpacing: -1, marginBottom: 4,
+  },
+  paymentTotal: {
+    fontSize: fontSize.caption, color: colors.fg2,
+    fontFamily: fonts.regular,
+  },
+  sliderBlock: { marginBottom: 20 },
+  sliderLabelRow: {
+    flexDirection: 'row-reverse', justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  sliderLabel: {
+    fontSize: fontSize.title, color: colors.fg1, fontFamily: fonts.semibold,
+  },
+  sliderValue: {
+    fontSize: fontSize.title, color: colors.accent, fontFamily: fonts.bold,
+  },
+  sliderTrack: {
+    height: 4, backgroundColor: colors.border2, borderRadius: 2,
+    marginBottom: 12, position: 'relative',
+  },
+  sliderFill: {
+    position: 'absolute', left: 0, top: 0, bottom: 0,
+    backgroundColor: colors.accent, borderRadius: 2,
+  },
+  sliderThumb: {
+    position: 'absolute', top: -8,
+    width: 20, height: 20, borderRadius: 10,
+    backgroundColor: colors.accent,
+    marginLeft: -10,
+  },
+  sliderRow: {
+    flexDirection: 'row-reverse', justifyContent: 'space-between',
+  },
+  sliderPip: {
+    paddingHorizontal: 10, paddingVertical: 6,
+    borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border2,
+  },
+  sliderPipActive: {
+    backgroundColor: colors.accentSoft, borderColor: colors.accent,
+  },
+  sliderPipText: {
+    fontSize: fontSize.caption, color: colors.fg3, fontFamily: fonts.medium,
+  },
+  sliderPipTextActive: {
+    color: colors.accent, fontFamily: fonts.bold,
+  },
 })

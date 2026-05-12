@@ -1,16 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react'
 import {
-  View, Text, StyleSheet, TouchableOpacity, TextInput,
-  Modal, Animated, Dimensions, ScrollView, TouchableWithoutFeedback,
-  KeyboardAvoidingView, Platform,
+  View, Text, StyleSheet, TouchableOpacity, Modal,
+  Animated, Dimensions, ScrollView, TouchableWithoutFeedback,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { colors, spacing, fontSize, radii } from '../theme/tokens'
+import { colors, spacing, fontSize, radii, shadows } from '../theme/tokens'
 import { fonts } from '../theme/typography'
 
 const { height: SH } = Dimensions.get('window')
-const SHEET_H = SH * 0.82
+const SHEET_TOP = 40
 
 export interface Filters {
   make?: string
@@ -18,64 +17,114 @@ export interface Filters {
   yearMin?: number
   yearMax?: number
   maxPrice?: number
+  minPrice?: number
   maxKm?: number
   city?: string
+  body?: string[]
+  fuel?: string[]
+  hand?: number | 'any'
+  region?: string[]
 }
 
 interface Props {
   visible: boolean
   initial: Filters
+  resultCount?: number
   onApply: (f: Filters) => void
   onClose: () => void
 }
 
-const YEAR_NOW = new Date().getFullYear()
-const YEARS = Array.from({ length: YEAR_NOW - 1994 }, (_, i) => YEAR_NOW - i)
-
-const CITIES = [
-  'תל אביב', 'חיפה', 'ירושלים', 'ראשון לציון', 'פתח תקווה', 'אשדוד',
-  'נתניה', 'באר שבע', 'רמת גן', 'הרצליה', 'חולון', 'רחובות', 'מודיעין',
-  'קריית ביאליק', 'קריית מוצקין', 'קריית אתא', 'אילת', 'נס ציונה', 'לוד',
-]
-
-const PRICE_PRESETS = [
-  { label: 'עד 60K',  value: 60000 },
-  { label: 'עד 100K', value: 100000 },
-  { label: 'עד 150K', value: 150000 },
-  { label: 'עד 200K', value: 200000 },
-]
-
-const KM_PRESETS = [
-  { label: 'עד 50K',  value: 50000 },
-  { label: 'עד 100K', value: 100000 },
-  { label: 'עד 150K', value: 150000 },
-  { label: 'עד 200K', value: 200000 },
-]
-
-function countActive(f: Filters) {
-  return [f.make, f.model, f.yearMin, f.yearMax, f.maxPrice, f.maxKm, f.city]
-    .filter(v => v !== undefined && v !== '').length
+export function countActive(f: Filters): number {
+  let n = 0
+  if (f.make) n++
+  if (f.model) n++
+  if (f.yearMin) n++
+  if (f.yearMax) n++
+  if (f.minPrice) n++
+  if (f.maxPrice) n++
+  if (f.maxKm) n++
+  if (f.city) n++
+  if (f.body && f.body.length > 0) n++
+  if (f.fuel && f.fuel.length > 0) n++
+  if (f.hand !== undefined && f.hand !== 'any') n++
+  if (f.region && f.region.length > 0) n++
+  return n
 }
 
-export function FilterSheet({ visible, initial, onApply, onClose }: Props) {
+const BODY_TYPES = ['סדאן', 'האצ\'בק', 'קרוסאובר', 'סטיישן']
+const FUEL_TYPES = ['בנזין', 'היברידי', 'חשמלי', 'דיזל']
+const REGIONS = ['צפון', 'מרכז', 'ירושלים', 'דרום']
+
+const PRICE_STEPS = [30000, 60000, 90000, 120000, 150000, 180000, 210000, 240000, 270000, 300000]
+const YEAR_STEPS = Array.from({ length: 16 }, (_, i) => 2010 + i)
+const KM_STEPS = [20000, 40000, 60000, 80000, 100000, 120000, 140000, 160000, 180000, 200000, 220000, 240000, 260000, 280000, 300000]
+
+const HAND_OPTIONS: { label: string; value: number | 'any' }[] = [
+  { label: 'הכל', value: 'any' },
+  { label: 'יד 1', value: 1 },
+  { label: 'יד 2', value: 2 },
+  { label: 'יד 3+', value: 3 },
+]
+
+function fmtPrice(v: number) {
+  return `₪${Math.round(v / 1000)}K`
+}
+
+function fmtKm(v: number) {
+  return `${Math.round(v / 1000)}ק״מ`
+}
+
+export function FilterSheet({ visible, initial, resultCount, onApply, onClose }: Props) {
   const insets = useSafeAreaInsets()
-  const slideY = useRef(new Animated.Value(SHEET_H)).current
+  const slideY = useRef(new Animated.Value(SH)).current
   const [f, setF] = useState<Filters>(initial)
 
   useEffect(() => {
     if (visible) {
       setF(initial)
-      Animated.spring(slideY, { toValue: 0, useNativeDriver: true, tension: 65, friction: 11 }).start()
+      Animated.spring(slideY, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 60,
+        friction: 12,
+      }).start()
     } else {
-      Animated.timing(slideY, { toValue: SHEET_H, useNativeDriver: true, duration: 260 }).start()
+      Animated.timing(slideY, {
+        toValue: SH,
+        useNativeDriver: true,
+        duration: 280,
+      }).start()
     }
   }, [visible])
 
-  const set = (key: keyof Filters, val: any) => setF(prev => ({ ...prev, [key]: val || undefined }))
+  const set = <K extends keyof Filters>(key: K, val: Filters[K]) =>
+    setF(prev => ({ ...prev, [key]: val }))
+
+  const toggleArr = (key: 'body' | 'fuel' | 'region', val: string) => {
+    setF(prev => {
+      const arr: string[] = (prev[key] as string[]) ?? []
+      return {
+        ...prev,
+        [key]: arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val],
+      }
+    })
+  }
 
   const reset = () => setF({})
   const apply = () => { onApply(f); onClose() }
   const active = countActive(f)
+
+  const totalSections = 7
+  const filledSections = [
+    f.body && f.body.length > 0,
+    f.fuel && f.fuel.length > 0,
+    f.minPrice || f.maxPrice,
+    f.yearMin || f.yearMax,
+    f.maxKm,
+    f.hand !== undefined && f.hand !== 'any',
+    f.region && f.region.length > 0,
+  ].filter(Boolean).length
+  const progress = filledSections / totalSections
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
@@ -83,114 +132,150 @@ export function FilterSheet({ visible, initial, onApply, onClose }: Props) {
         <View style={s.backdrop} />
       </TouchableWithoutFeedback>
 
-      <Animated.View style={[s.sheet, { transform: [{ translateY: slideY }], paddingBottom: insets.bottom + 16 }]}>
-        {/* Handle */}
+      <Animated.View
+        style={[
+          s.sheet,
+          shadows.lg,
+          { transform: [{ translateY: slideY }], paddingBottom: insets.bottom + 16, top: SHEET_TOP },
+        ]}
+      >
         <View style={s.handle} />
 
-        {/* Header */}
         <View style={s.header}>
-          <TouchableOpacity onPress={reset} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Text style={[s.headerAction, { color: active > 0 ? colors.danger : colors.fg4 }]}>איפוס</Text>
+          <TouchableOpacity
+            onPress={active > 0 ? reset : undefined}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={[s.headerReset, { color: active > 0 ? colors.accent : colors.fg4 }]}>
+              איפוס
+            </Text>
           </TouchableOpacity>
-          <Text style={s.headerTitle}>סינון רכבים</Text>
-          <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name="close" size={20} color={colors.fg2} />
+
+          <Text style={s.headerTitle}>סינון</Text>
+
+          <TouchableOpacity style={s.closeBtn} onPress={onClose} activeOpacity={0.75}>
+            <Ionicons name="close" size={18} color={colors.fg2} />
           </TouchableOpacity>
         </View>
 
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
+        <View style={s.progressTrack}>
+          <Animated.View style={[s.progressFill, { width: `${progress * 100}%` }]} />
+        </View>
 
-            {/* Make + Model */}
-            <Section title="יצרן ודגם">
-              <Row>
-                <FilterInput
-                  placeholder="יצרן (Toyota, Kia...)"
-                  value={f.make ?? ''}
-                  onChangeText={v => set('make', v)}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={s.body}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Section title="סוג רכב">
+            <ChipGroup>
+              {BODY_TYPES.map(item => (
+                <Chip
+                  key={item}
+                  label={item}
+                  active={(f.body ?? []).includes(item)}
+                  onPress={() => toggleArr('body', item)}
                 />
-                <FilterInput
-                  placeholder="דגם"
-                  value={f.model ?? ''}
-                  onChangeText={v => set('model', v)}
+              ))}
+            </ChipGroup>
+          </Section>
+
+          <Section title="סוג מנוע">
+            <ChipGroup>
+              {FUEL_TYPES.map(item => (
+                <Chip
+                  key={item}
+                  label={item}
+                  active={(f.fuel ?? []).includes(item)}
+                  onPress={() => toggleArr('fuel', item)}
                 />
-              </Row>
-            </Section>
+              ))}
+            </ChipGroup>
+          </Section>
 
-            {/* Price */}
-            <Section title="מחיר">
-              <ChipRow>
-                {PRICE_PRESETS.map(p => (
-                  <Chip
-                    key={p.value}
-                    label={p.label}
-                    active={f.maxPrice === p.value}
-                    onPress={() => set('maxPrice', f.maxPrice === p.value ? undefined : p.value)}
-                  />
-                ))}
-              </ChipRow>
-              <FilterInput
-                placeholder="מחיר מקסימום מותאם אישית (₪)"
-                value={f.maxPrice?.toString() ?? ''}
-                onChangeText={v => set('maxPrice', v ? Number(v.replace(/\D/g, '')) : undefined)}
-                keyboardType="numeric"
-              />
-            </Section>
+          <Section title="טווח מחיר">
+            <RangePresets
+              label="מינימום"
+              value={f.minPrice}
+              steps={PRICE_STEPS}
+              format={fmtPrice}
+              onSelect={v => set('minPrice', v)}
+            />
+            <RangePresets
+              label="מקסימום"
+              value={f.maxPrice}
+              steps={PRICE_STEPS}
+              format={fmtPrice}
+              onSelect={v => set('maxPrice', v)}
+            />
+          </Section>
 
-            {/* KM */}
-            <Section title="קילומטרים">
-              <ChipRow>
-                {KM_PRESETS.map(p => (
-                  <Chip
-                    key={p.value}
-                    label={p.label}
-                    active={f.maxKm === p.value}
-                    onPress={() => set('maxKm', f.maxKm === p.value ? undefined : p.value)}
-                  />
-                ))}
-              </ChipRow>
-            </Section>
+          <Section title="שנת ייצור">
+            <RangePresets
+              label="משנת"
+              value={f.yearMin}
+              steps={YEAR_STEPS}
+              format={v => String(v)}
+              onSelect={v => set('yearMin', v)}
+            />
+            <RangePresets
+              label="עד שנת"
+              value={f.yearMax}
+              steps={YEAR_STEPS}
+              format={v => String(v)}
+              onSelect={v => set('yearMax', v)}
+            />
+          </Section>
 
-            {/* Year */}
-            <Section title="שנה">
-              <Row>
-                <YearPicker
-                  label="משנת"
-                  value={f.yearMin}
-                  years={YEARS}
-                  onSelect={y => set('yearMin', y)}
+          <Section title="קילומטראז'">
+            <RangePresets
+              label="מקסימום ק״מ"
+              value={f.maxKm}
+              steps={KM_STEPS}
+              format={fmtKm}
+              onSelect={v => set('maxKm', v)}
+            />
+          </Section>
+
+          <Section title="יד">
+            <View style={s.handRow}>
+              {HAND_OPTIONS.map(opt => {
+                const cur = f.hand ?? 'any'
+                const isActive = cur === opt.value
+                return (
+                  <TouchableOpacity
+                    key={String(opt.value)}
+                    style={[s.handBtn, isActive && s.handBtnActive]}
+                    onPress={() => set('hand', opt.value)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[s.handLabel, isActive && s.handLabelActive]}>{opt.label}</Text>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+          </Section>
+
+          <Section title="אזור">
+            <ChipGroup>
+              {REGIONS.map(item => (
+                <Chip
+                  key={item}
+                  label={item}
+                  active={(f.region ?? []).includes(item)}
+                  onPress={() => toggleArr('region', item)}
                 />
-                <YearPicker
-                  label="עד שנת"
-                  value={f.yearMax}
-                  years={YEARS}
-                  onSelect={y => set('yearMax', y)}
-                />
-              </Row>
-            </Section>
+              ))}
+            </ChipGroup>
+          </Section>
+        </ScrollView>
 
-            {/* City */}
-            <Section title="עיר">
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.cityRow}>
-                {CITIES.map(city => (
-                  <Chip
-                    key={city}
-                    label={city}
-                    active={f.city === city}
-                    onPress={() => set('city', f.city === city ? undefined : city)}
-                  />
-                ))}
-              </ScrollView>
-            </Section>
-
-          </ScrollView>
-        </KeyboardAvoidingView>
-
-        {/* Apply CTA */}
-        <View style={s.ctaWrap}>
-          <TouchableOpacity style={s.applyBtn} onPress={apply} activeOpacity={0.88}>
-            <Text style={s.applyText}>
-              {active > 0 ? `הצג תוצאות (${active} פילטרים)` : 'הצג את כל הרכבים'}
+        <View style={s.footer}>
+          <TouchableOpacity style={s.ctaBtn} onPress={apply} activeOpacity={0.85}>
+            <Text style={s.ctaText}>
+              {resultCount !== undefined
+                ? `הצג ${resultCount} תוצאות`
+                : 'הצג את כל הרכבים'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -198,8 +283,6 @@ export function FilterSheet({ visible, initial, onApply, onClose }: Props) {
     </Modal>
   )
 }
-
-// ── Sub-components ────────────────────────────────────────────
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -210,13 +293,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-function Row({ children }: { children: React.ReactNode }) {
-  return <View style={{ flexDirection: 'row-reverse', gap: spacing[3] }}>{children}</View>
-}
-
-function ChipRow({ children }: { children: React.ReactNode }) {
+function ChipGroup({ children }: { children: React.ReactNode }) {
   return (
-    <View style={{ flexDirection: 'row-reverse', flexWrap: 'wrap', gap: spacing[2], marginBottom: spacing[3] }}>
+    <View style={cg.row}>
       {children}
     </View>
   )
@@ -227,56 +306,59 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
     <TouchableOpacity
       style={[chip.base, active && chip.active]}
       onPress={onPress}
-      activeOpacity={0.75}
+      activeOpacity={0.72}
     >
-      {active && <Ionicons name="checkmark" size={11} color="#fff" />}
       <Text style={[chip.label, active && chip.labelActive]}>{label}</Text>
     </TouchableOpacity>
   )
 }
 
-function FilterInput(props: {
-  placeholder: string; value: string
-  onChangeText: (v: string) => void; keyboardType?: 'default' | 'numeric'
-}) {
-  return (
-    <TextInput
-      style={fi.input}
-      placeholder={props.placeholder}
-      placeholderTextColor={colors.fg4}
-      value={props.value}
-      onChangeText={props.onChangeText}
-      textAlign="right"
-      keyboardType={props.keyboardType ?? 'default'}
-      autoCorrect={false}
-    />
-  )
-}
-
-function YearPicker({ label, value, years, onSelect }: {
-  label: string; value?: number; years: number[]; onSelect: (y: number | undefined) => void
+function RangePresets({
+  label,
+  value,
+  steps,
+  format,
+  onSelect,
+}: {
+  label: string
+  value?: number
+  steps: number[]
+  format: (v: number) => string
+  onSelect: (v: number | undefined) => void
 }) {
   const [open, setOpen] = useState(false)
   return (
-    <View style={{ flex: 1 }}>
-      <TouchableOpacity style={yp.btn} onPress={() => setOpen(o => !o)} activeOpacity={0.8}>
-        <Ionicons name="chevron-down" size={14} color={colors.fg3} />
-        <Text style={[yp.label, value && yp.labelActive]}>
-          {value ? String(value) : label}
+    <View style={rp.wrap}>
+      <TouchableOpacity
+        style={rp.trigger}
+        onPress={() => setOpen(o => !o)}
+        activeOpacity={0.8}
+      >
+        <Ionicons
+          name={open ? 'chevron-up' : 'chevron-down'}
+          size={14}
+          color={colors.fg3}
+        />
+        <Text style={[rp.triggerText, value !== undefined && rp.triggerTextActive]}>
+          {value !== undefined ? format(value) : label}
         </Text>
       </TouchableOpacity>
       {open && (
-        <View style={yp.dropdown}>
-          <ScrollView nestedScrollEnabled style={{ maxHeight: 180 }}>
-            <TouchableOpacity style={yp.option} onPress={() => { onSelect(undefined); setOpen(false) }}>
-              <Text style={yp.optText}>ללא הגבלה</Text>
+        <View style={rp.dropdown}>
+          <ScrollView nestedScrollEnabled style={{ maxHeight: 200 }}>
+            <TouchableOpacity
+              style={rp.option}
+              onPress={() => { onSelect(undefined); setOpen(false) }}
+            >
+              <Text style={rp.optText}>ללא הגבלה</Text>
             </TouchableOpacity>
-            {years.map(y => (
+            {steps.map(v => (
               <TouchableOpacity
-                key={y} style={[yp.option, value === y && yp.optActive]}
-                onPress={() => { onSelect(y); setOpen(false) }}
+                key={v}
+                style={[rp.option, value === v && rp.optActive]}
+                onPress={() => { onSelect(v); setOpen(false) }}
               >
-                <Text style={[yp.optText, value === y && yp.optTextActive]}>{y}</Text>
+                <Text style={[rp.optText, value === v && rp.optTextActive]}>{format(v)}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -286,91 +368,220 @@ function YearPicker({ label, value, years, onSelect }: {
   )
 }
 
-// ── Styles ────────────────────────────────────────────────────
-
 const s = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(27,30,27,0.32)',
   },
   sheet: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    height: SHEET_H,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: colors.bg1,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    borderWidth: 0.5, borderColor: colors.border2,
+    borderTopLeftRadius: radii.xxl,
+    borderTopRightRadius: radii.xxl,
   },
   handle: {
-    alignSelf: 'center', width: 36, height: 4,
-    borderRadius: 2, backgroundColor: colors.border2, marginTop: 10,
+    alignSelf: 'center',
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.fg4,
+    marginTop: 12,
+    marginBottom: 4,
   },
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing[4], paddingVertical: spacing[4],
-    borderBottomWidth: 0.5, borderBottomColor: colors.border1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 22,
+    paddingVertical: 14,
   },
-  headerTitle: { color: colors.fg1, fontSize: fontSize.title, fontFamily: fonts.bold },
-  headerAction: { fontSize: fontSize.body, fontFamily: fonts.medium },
-  body: { paddingHorizontal: spacing[4], paddingTop: spacing[4], paddingBottom: spacing[4] },
-  cityRow: { flexDirection: 'row-reverse', gap: spacing[2], paddingBottom: 4 },
-  ctaWrap: {
-    paddingHorizontal: spacing[4], paddingTop: spacing[3],
-    borderTopWidth: 0.5, borderTopColor: colors.border1,
+  headerTitle: {
+    color: colors.fg1,
+    fontSize: 22,
+    fontFamily: fonts.bold,
+    textAlign: 'center',
   },
-  applyBtn: {
-    backgroundColor: colors.accent, borderRadius: radii.md,
-    height: 52, alignItems: 'center', justifyContent: 'center',
+  headerReset: {
+    fontSize: fontSize.body,
+    fontFamily: fonts.medium,
   },
-  applyText: { color: '#fff', fontFamily: fonts.bold, fontSize: fontSize.title },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: radii.pill,
+    backgroundColor: colors.bg2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  progressTrack: {
+    height: 4,
+    backgroundColor: colors.bg2,
+    marginHorizontal: 0,
+  },
+  progressFill: {
+    height: 4,
+    backgroundColor: colors.accent,
+    borderRadius: 2,
+  },
+  body: {
+    paddingHorizontal: 22,
+    paddingTop: 20,
+    paddingBottom: 12,
+  },
+  handRow: {
+    flexDirection: 'row-reverse',
+    gap: 8,
+  },
+  handBtn: {
+    flex: 1,
+    height: 42,
+    borderRadius: radii.md,
+    backgroundColor: colors.bg1,
+    borderWidth: 1,
+    borderColor: colors.border2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  handBtnActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  handLabel: {
+    color: colors.fg1,
+    fontSize: fontSize.body,
+    fontFamily: fonts.medium,
+  },
+  handLabelActive: {
+    color: colors.onAccent,
+    fontFamily: fonts.semibold,
+  },
+  footer: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border1,
+    paddingTop: 14,
+    paddingHorizontal: 22,
+    paddingBottom: 22,
+  },
+  ctaBtn: {
+    backgroundColor: colors.accent,
+    borderRadius: radii.pill,
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaText: {
+    color: colors.onAccent,
+    fontSize: fontSize.title,
+    fontFamily: fonts.bold,
+  },
 })
 
 const sec = StyleSheet.create({
-  wrap: { marginBottom: spacing[5] },
-  title: { color: colors.fg2, fontSize: fontSize.caption, fontFamily: fonts.semibold, textAlign: 'right', marginBottom: spacing[3] },
+  wrap: {
+    marginBottom: 24,
+  },
+  title: {
+    color: colors.fg2,
+    fontSize: fontSize.caption,
+    fontFamily: fonts.semibold,
+    textAlign: 'right',
+    marginBottom: 10,
+  },
+})
+
+const cg = StyleSheet.create({
+  row: {
+    flexDirection: 'row-reverse',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
 })
 
 const chip = StyleSheet.create({
   base: {
-    flexDirection: 'row-reverse', alignItems: 'center', gap: 4,
-    paddingHorizontal: 12, paddingVertical: 7, borderRadius: radii.pill,
-    backgroundColor: colors.bg2, borderWidth: 0.5, borderColor: colors.border2,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: radii.pill,
+    backgroundColor: colors.bg1,
+    borderWidth: 1,
+    borderColor: colors.border2,
   },
-  active: { backgroundColor: colors.accent, borderColor: colors.accent },
-  label: { color: colors.fg2, fontSize: 12, fontFamily: fonts.medium },
-  labelActive: { color: '#fff', fontFamily: fonts.semibold },
+  active: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  label: {
+    color: colors.fg1,
+    fontSize: fontSize.body,
+    fontFamily: fonts.medium,
+  },
+  labelActive: {
+    color: colors.onAccent,
+    fontFamily: fonts.semibold,
+  },
 })
 
-const fi = StyleSheet.create({
-  input: {
-    flex: 1, backgroundColor: colors.bg2, borderRadius: radii.md,
-    borderWidth: 0.5, borderColor: colors.border2,
-    paddingHorizontal: spacing[4], height: 46,
-    color: colors.fg1, fontSize: fontSize.body, fontFamily: fonts.regular,
-    marginBottom: spacing[3],
+const rp = StyleSheet.create({
+  wrap: {
+    marginBottom: 10,
+    zIndex: 10,
   },
-})
-
-const yp = StyleSheet.create({
-  btn: {
-    flexDirection: 'row-reverse', alignItems: 'center', gap: 6,
-    backgroundColor: colors.bg2, borderRadius: radii.md,
-    borderWidth: 0.5, borderColor: colors.border2,
-    paddingHorizontal: spacing[3], height: 46,
-    marginBottom: spacing[3],
+  trigger: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.bg2,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border2,
+    paddingHorizontal: 14,
+    height: 46,
   },
-  label: { flex: 1, color: colors.fg3, fontSize: fontSize.body, textAlign: 'right', fontFamily: fonts.regular },
-  labelActive: { color: colors.fg1, fontFamily: fonts.medium },
+  triggerText: {
+    flex: 1,
+    color: colors.fg3,
+    fontSize: fontSize.body,
+    fontFamily: fonts.regular,
+    textAlign: 'right',
+  },
+  triggerTextActive: {
+    color: colors.fg1,
+    fontFamily: fonts.medium,
+  },
   dropdown: {
-    position: 'absolute', top: 50, left: 0, right: 0, zIndex: 100,
-    backgroundColor: colors.bg1, borderRadius: radii.md,
-    borderWidth: 0.5, borderColor: colors.border2,
-    shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
+    position: 'absolute',
+    top: 50,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    backgroundColor: colors.bg1,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border2,
+    ...shadows.md,
   },
-  option: { paddingHorizontal: spacing[4], paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border1 },
-  optActive: { backgroundColor: colors.accentSoft },
-  optText: { color: colors.fg2, fontSize: fontSize.body, textAlign: 'right', fontFamily: fonts.regular },
-  optTextActive: { color: colors.accent, fontFamily: fonts.semibold },
+  option: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border1,
+  },
+  optActive: {
+    backgroundColor: colors.accentSoft,
+  },
+  optText: {
+    color: colors.fg2,
+    fontSize: fontSize.body,
+    fontFamily: fonts.regular,
+    textAlign: 'right',
+  },
+  optTextActive: {
+    color: colors.accent,
+    fontFamily: fonts.semibold,
+  },
 })
 
 export function FilterBadge({ count, onPress }: { count: number; onPress: () => void }) {
@@ -388,14 +599,30 @@ export function FilterBadge({ count, onPress }: { count: number; onPress: () => 
 
 const fb = StyleSheet.create({
   btn: {
-    width: 40, height: 40, borderRadius: radii.md,
-    backgroundColor: colors.bg1, borderWidth: 0.5, borderColor: colors.border2,
-    alignItems: 'center', justifyContent: 'center',
+    width: 44,
+    height: 44,
+    borderRadius: radii.md,
+    backgroundColor: colors.bg1,
+    borderWidth: 1,
+    borderColor: colors.border2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.sm,
   },
   badge: {
-    position: 'absolute', top: -4, right: -4,
-    width: 16, height: 16, borderRadius: 8,
-    backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  badgeText: { color: '#fff', fontSize: 9, fontFamily: fonts.bold },
+  badgeText: {
+    color: colors.onAccent,
+    fontSize: 9,
+    fontFamily: fonts.bold,
+  },
 })
