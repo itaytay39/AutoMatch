@@ -24,10 +24,10 @@ const { width: SW } = Dimensions.get('window')
 const GALLERY_H = 288
 
 const SOURCE_DOT: Record<string, string> = {
-  yad2: '#FF6B35',
+  yad2:     '#FF6B35',
   homeless: '#6B35FF',
   autoboom: '#35B0FF',
-  carwiz: '#35FF8A',
+  carwiz:   '#35FF8A',
 }
 
 interface FullListing {
@@ -169,29 +169,23 @@ export function DetailScreen({ route, navigation }: Props) {
               ))}
             </ScrollView>
 
-            {/* Image counter pill */}
             {images.length > 1 && (
               <View style={s.counterPill}>
                 <Text style={s.counterText}>{imgIdx + 1}/{images.length}</Text>
               </View>
             )}
 
-            {/* Dot indicators */}
             {images.length > 1 && (
               <View style={s.dotsRow}>
                 {images.map((_: string, i: number) => (
                   <View
                     key={i}
-                    style={[
-                      s.dot,
-                      i === imgIdx ? s.dotActive : s.dotInactive,
-                    ]}
+                    style={[s.dot, i === imgIdx ? s.dotActive : s.dotInactive]}
                   />
                 ))}
               </View>
             )}
 
-            {/* Source badge — below header area */}
             <View style={[s.sourceBadge, { top: insets.top + 56 }]}>
               <View style={[s.sourceDot, { backgroundColor: sourceDotColor }]} />
               <Text style={s.sourceBadgeText}>{listing.source}</Text>
@@ -202,7 +196,6 @@ export function DetailScreen({ route, navigation }: Props) {
         {/* 2 — WHITE SHEET LIFTING */}
         <View style={s.sheet}>
 
-          {/* Title row */}
           <View style={s.titleRow}>
             <View style={s.titleLeft}>
               <Text style={s.carName} numberOfLines={1}>
@@ -223,7 +216,7 @@ export function DetailScreen({ route, navigation }: Props) {
           </View>
 
           {/* PRICE CARD */}
-          <View style={[s.card, s.priceCard]}>
+          <View style={[s.card, { borderRadius: radii.xxl }]}>
             <Text style={s.eyebrow}>מחיר</Text>
             <View style={s.priceMainRow}>
               <Text style={s.bigPrice}>₪{price}</Text>
@@ -239,7 +232,6 @@ export function DetailScreen({ route, navigation }: Props) {
 
             <View style={s.divider} />
 
-            {/* Price Gauge */}
             {marketPct != null && (
               <View style={s.gaugeWrap}>
                 <PriceGauge pct={marketPct} />
@@ -254,14 +246,14 @@ export function DetailScreen({ route, navigation }: Props) {
           </View>
 
           {/* SPEC GRID */}
-          <View style={[s.card, { padding: 0, overflow: 'hidden' }]}>
+          <View style={[s.card, { padding: 10, borderRadius: 24 }]}>
             <View style={s.specGrid}>
               {[
-                { label: 'שנה', value: listing.year.toString() },
-                { label: 'ק״מ', value: km ? `${km}` : '—' },
-                { label: 'יד', value: listing.hand ? listing.hand.toString() : '—' },
+                { label: 'שנה',  value: listing.year.toString() },
+                { label: 'ק״מ',  value: km ? `${km}` : '—' },
+                { label: 'יד',   value: listing.hand ? listing.hand.toString() : '—' },
                 { label: 'מנוע', value: listing.engine ?? '—' },
-                { label: 'כ״ס', value: listing.power ? `${listing.power}` : '—' },
+                { label: 'כ״ס',  value: listing.power ? `${listing.power}` : '—' },
                 { label: '0–100', value: listing.zeroToHundred ? `${listing.zeroToHundred}ש` : '—' },
               ].map((item, i) => (
                 <View key={i} style={s.specTile}>
@@ -274,7 +266,7 @@ export function DetailScreen({ route, navigation }: Props) {
 
           {/* PRICE HISTORY CARD */}
           {listing.priceHistory && listing.priceHistory.length > 0 && (
-            <View style={s.card}>
+            <View style={[s.card, { borderRadius: 24 }]}>
               <Text style={s.cardTitle}>היסטוריית מחיר</Text>
               <Text style={s.eyebrow}>30 ימים אחרונים</Text>
               <PriceHistoryChart snapshots={listing.priceHistory} />
@@ -360,7 +352,7 @@ export function DetailScreen({ route, navigation }: Props) {
       {/* Absolute header overlay */}
       <View style={[s.headerOverlay, { paddingTop: insets.top + 8 }]} pointerEvents="box-none">
         <TouchableOpacity style={s.headerCircle} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={22} color={colors.fg1} />
+          <Ionicons name="chevron-forward" size={22} color={colors.fg1} />
         </TouchableOpacity>
         <View style={s.headerRight}>
           <TouchableOpacity style={s.headerCircle}>
@@ -482,21 +474,20 @@ function PriceGauge({ pct }: { pct: number }) {
   const angle = Math.PI + normalised * Math.PI
   const nx = cx + r * Math.cos(angle)
   const ny = cy + r * Math.sin(angle)
-  const arcGreen = describeArc(cx, cy, r, 180, 240)
+  const arcGreen  = describeArc(cx, cy, r, 180, 240)
   const arcYellow = describeArc(cx, cy, r, 240, 300)
-  const arcRed = describeArc(cx, cy, r, 300, 360)
+  const arcRed    = describeArc(cx, cy, r, 300, 360)
   return (
     <Svg width={W} height={H + 12} viewBox={`0 0 ${W} ${H + 12}`}>
-      <Path d={arcGreen}  stroke={colors.success}  strokeWidth={12} fill="none" strokeLinecap="round" />
-      <Path d={arcYellow} stroke={colors.warning}  strokeWidth={12} fill="none" strokeLinecap="round" />
-      <Path d={arcRed}    stroke={colors.danger}   strokeWidth={12} fill="none" strokeLinecap="round" />
+      <Path d={arcGreen}  stroke={colors.success} strokeWidth={12} fill="none" strokeLinecap="round" />
+      <Path d={arcYellow} stroke={colors.warning} strokeWidth={12} fill="none" strokeLinecap="round" />
+      <Path d={arcRed}    stroke={colors.danger}  strokeWidth={12} fill="none" strokeLinecap="round" />
       <Path
         d={`M ${cx} ${cy} L ${nx} ${ny}`}
         stroke={colors.fg1}
         strokeWidth={2.5}
         strokeLinecap="round"
       />
-      <Path d="" fill={colors.fg1} />
     </Svg>
   )
 }
@@ -541,8 +532,8 @@ const s = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'center', gap: 5,
   },
   dot: { height: 5, borderRadius: 2.5 },
-  dotActive: { width: 16, backgroundColor: colors.accent },
-  dotInactive: { width: 5, backgroundColor: 'rgba(255,255,255,0.60)' },
+  dotActive:   { width: 16, backgroundColor: colors.accent },
+  dotInactive: { width: 5,  backgroundColor: 'rgba(255,255,255,0.60)' },
 
   sourceBadge: {
     position: 'absolute', left: 14,
@@ -608,7 +599,6 @@ const s = StyleSheet.create({
     marginBottom: spacing[4],
     ...shadows.sm,
   },
-  priceCard: {},
 
   eyebrow: {
     fontSize: fontSize.caption, color: colors.fg3,
@@ -659,7 +649,7 @@ const s = StyleSheet.create({
 
   specGrid: {
     flexDirection: 'row-reverse', flexWrap: 'wrap',
-    gap: 8, padding: 10,
+    gap: 8,
   },
   specTile: {
     backgroundColor: colors.bg2,
