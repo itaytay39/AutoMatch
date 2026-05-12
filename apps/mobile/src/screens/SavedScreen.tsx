@@ -45,19 +45,21 @@ export function SavedScreen() {
   const savedIds = useSaved()
   const [cards, setCards] = useState<ReturnType<typeof toCard>[]>([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(false)
 
   const fetchSaved = useCallback(async () => {
     const ids = [...savedIds]
     if (ids.length === 0) { setCards([]); return }
     setLoading(true)
+    setError(false)
     try {
       const results = await Promise.allSettled(ids.map(id => api.getListing(id)))
       const listings = results
         .filter(r => r.status === 'fulfilled')
         .map(r => toCard((r as PromiseFulfilledResult<any>).value))
       setCards(listings)
-    } catch (e) {
-      console.warn('Saved fetch error:', e)
+    } catch {
+      setError(true)
     } finally {
       setLoading(false)
     }
@@ -86,11 +88,21 @@ export function SavedScreen() {
           </View>
           <Text style={s.sub}>רכבים שסימנת למעקב</Text>
 
+          {error && !loading && (
+            <View style={s.errorBanner}>
+              <Ionicons name="cloud-offline-outline" size={16} color={colors.warning} />
+              <Text style={s.errorText}>בעיית חיבור — </Text>
+              <TouchableOpacity onPress={fetchSaved}>
+                <Text style={s.retryLink}>נסה שוב</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {loading ? (
             <View style={s.loadingWrap}>
               <ActivityIndicator size="large" color={colors.accent} />
             </View>
-          ) : cards.length === 0 ? (
+          ) : cards.length === 0 && !error ? (
             <View style={s.emptyState}>
               <View style={s.emptyIcon}>
                 <Ionicons name="heart-outline" size={40} color={colors.fg3} />
@@ -138,6 +150,16 @@ const s = StyleSheet.create({
   sub: { color: colors.fg3, fontSize: fontSize.caption, textAlign: 'right', marginBottom: spacing[5] },
 
   loadingWrap: { paddingVertical: 48, alignItems: 'center' },
+
+  errorBanner: {
+    flexDirection: 'row-reverse', alignItems: 'center', gap: 6,
+    marginBottom: spacing[3],
+    backgroundColor: '#2A1A08', borderRadius: radii.md,
+    borderWidth: 0.5, borderColor: 'rgba(217,119,6,0.3)',
+    paddingHorizontal: spacing[4], paddingVertical: spacing[3],
+  },
+  errorText: { color: colors.warning, fontSize: fontSize.caption, fontFamily: fonts.regular },
+  retryLink: { color: colors.accent, fontSize: fontSize.caption, fontFamily: fonts.semibold },
 
   emptyState: { alignItems: 'center', paddingVertical: 64, gap: spacing[4] },
   emptyIcon: {

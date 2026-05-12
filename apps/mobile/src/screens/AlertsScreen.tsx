@@ -33,6 +33,7 @@ const EMPTY_FORM = { make: '', model: '', maxPrice: '', maxKm: '', city: '' }
 export function AlertsScreen() {
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [userId, setUserId] = useState<string | null>(null)
@@ -46,11 +47,12 @@ export function AlertsScreen() {
   }, [])
 
   const loadAlerts = useCallback(async (uid: string) => {
+    setError(false)
     try {
       const rows = await api.getAlerts(uid) as Alert[]
       setAlerts(rows)
-    } catch (e) {
-      console.warn('Failed to load alerts:', e)
+    } catch {
+      setError(true)
     } finally {
       setLoading(false)
     }
@@ -104,6 +106,17 @@ export function AlertsScreen() {
           {loading && (
             <View style={s.loadingWrap}>
               <ActivityIndicator size="small" color={colors.accent} />
+            </View>
+          )}
+
+          {/* Error state */}
+          {!loading && error && (
+            <View style={s.errorBanner}>
+              <Ionicons name="cloud-offline-outline" size={16} color={colors.warning} />
+              <Text style={s.errorText}>בעיית חיבור — </Text>
+              <TouchableOpacity onPress={() => userId && loadAlerts(userId)}>
+                <Text style={s.retryLink}>נסה שוב</Text>
+              </TouchableOpacity>
             </View>
           )}
 
@@ -225,6 +238,16 @@ const s = StyleSheet.create({
   countText: { color: colors.accent, fontSize: fontSize.micro, fontFamily: fonts.bold },
   sub: { color: colors.fg3, fontSize: fontSize.caption, textAlign: 'right', marginBottom: spacing[5] },
   loadingWrap: { paddingVertical: 32, alignItems: 'center' },
+
+  errorBanner: {
+    flexDirection: 'row-reverse', alignItems: 'center', gap: 6,
+    marginBottom: spacing[3],
+    backgroundColor: '#2A1A08', borderRadius: radii.md,
+    borderWidth: 0.5, borderColor: 'rgba(217,119,6,0.3)',
+    paddingHorizontal: spacing[4], paddingVertical: spacing[3],
+  },
+  errorText: { color: colors.warning, fontSize: fontSize.caption, fontFamily: fonts.regular },
+  retryLink: { color: colors.accent, fontSize: fontSize.caption, fontFamily: fonts.semibold },
 
   alertCard: {
     backgroundColor: colors.bg1,
