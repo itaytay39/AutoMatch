@@ -6,6 +6,14 @@ import { compareToMarket, getSeasonalAlert } from '../lib/market.js'
 import { detectAnomalies, buildMarketContext } from '../lib/anomaly.js'
 import { checkSalvageRisk } from '../lib/salvage.js'
 
+const SORT_MAP: Record<string, object> = {
+  newest:     { createdAt: 'desc' },
+  price_asc:  { price: 'asc' },
+  price_desc: { price: 'desc' },
+  km_asc:     { mileage: 'asc' },
+  year_desc:  { year: 'desc' },
+}
+
 const SearchSchema = z.object({
   make: z.string().optional(),
   model: z.string().optional(),
@@ -14,6 +22,7 @@ const SearchSchema = z.object({
   maxPrice: z.coerce.number().optional(),
   maxKm: z.coerce.number().optional(),
   city: z.string().optional(),
+  sort: z.enum(['newest', 'price_asc', 'price_desc', 'km_asc', 'year_desc']).default('newest'),
   page: z.coerce.number().default(1),
   limit: z.coerce.number().max(50).default(20),
 })
@@ -43,8 +52,10 @@ const listings: FastifyPluginAsync = async (app) => {
       ...(query.city && { city: { contains: query.city, mode: 'insensitive' as const } }),
     }
 
+    const orderBy = SORT_MAP[query.sort] ?? SORT_MAP.newest
+
     const [rows, total] = await Promise.all([
-      app.prisma.listing.findMany({ where, skip, take: query.limit, orderBy: { createdAt: 'desc' } }),
+      app.prisma.listing.findMany({ where, skip, take: query.limit, orderBy }),
       app.prisma.listing.count({ where }),
     ])
 

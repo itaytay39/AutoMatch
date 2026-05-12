@@ -26,7 +26,7 @@ export const eldanConnector = makePlaywrightConnector({
         price: (el.querySelector('[class*="price"], [class*="Price"]') as HTMLElement | null)?.innerText?.trim() ?? '',
         year:  (el.querySelector('[class*="year"], [class*="Year"]')  as HTMLElement | null)?.innerText?.trim() ?? '',
         km:    (el.querySelector('[class*="km"], [class*="mileage"]') as HTMLElement | null)?.innerText?.trim() ?? '',
-        city:  '',
+        city:  (el.querySelector('[class*="city"],[class*="location"],[class*="branch"],[class*="region"]') as HTMLElement | null)?.innerText?.trim() ?? '',
         img:   img?.src ?? img?.getAttribute('data-src') ?? '',
         href:  a?.href ?? '',
       }

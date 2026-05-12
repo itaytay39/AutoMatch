@@ -64,11 +64,11 @@ const QUICK_CHIPS = [
 ]
 
 const SORT_OPTIONS = [
-  { label: 'הכי חדש', key: 'newest' },
-  { label: 'מחיר: נמוך לגבוה', key: 'price_asc' },
+  { label: 'הכי חדש',          key: 'newest'     },
+  { label: 'מחיר: נמוך לגבוה', key: 'price_asc'  },
   { label: 'מחיר: גבוה לנמוך', key: 'price_desc' },
-  { label: 'ק״מ נמוך', key: 'km_asc' },
-  { label: 'עסקאות טובות', key: 'deal' },
+  { label: 'ק״מ נמוך',         key: 'km_asc'     },
+  { label: 'הכי חדש לשנה',     key: 'year_desc'  },
 ]
 
 const PAGE_SIZE = 20
@@ -89,17 +89,6 @@ function toCard(l: any): ListingCardData {
   }
 }
 
-function applySort(rows: ListingCardData[], sort: string): ListingCardData[] {
-  const sorted = [...rows]
-  if (sort === 'price_asc')  sorted.sort((a, b) => a.price - b.price)
-  if (sort === 'price_desc') sorted.sort((a, b) => b.price - a.price)
-  if (sort === 'km_asc')     sorted.sort((a, b) => (a.mileage ?? 999999) - (b.mileage ?? 999999))
-  if (sort === 'deal') {
-    const order: Record<string, number> = { great: 0, good: 1, fair: 2, suspicious: 3 }
-    sorted.sort((a, b) => (order[a.dealScore ?? 'fair'] ?? 2) - (order[b.dealScore ?? 'fair'] ?? 2))
-  }
-  return sorted
-}
 
 export function SearchScreen() {
   const navigation = useNavigation<Nav>()
@@ -133,15 +122,15 @@ export function SearchScreen() {
     if (filters.maxPrice) p.maxPrice = filters.maxPrice
     if (filters.maxKm)    p.maxKm    = filters.maxKm
     if (filters.city)     p.city     = filters.city
+    p.sort = sort
     return p
-  }, [query, filters])
+  }, [query, filters, sort])
 
   const fetchFirst = useCallback(async () => {
     setLoading(true); setError(false); setPage(1); setHasMore(true)
     try {
       const data = await api.getListings(buildParams(1)) as any
-      let rows: ListingCardData[] = (data.listings ?? []).map(toCard)
-      rows = applySort(rows, sort)
+      const rows: ListingCardData[] = (data.listings ?? []).map(toCard)
       setListings(rows)
       setTotal(data.total ?? rows.length)
       setHasMore(rows.length === PAGE_SIZE)
@@ -159,7 +148,7 @@ export function SearchScreen() {
       const nextPage = page + 1
       const data = await api.getListings(buildParams(nextPage)) as any
       const rows: ListingCardData[] = (data.listings ?? []).map(toCard)
-      setListings(prev => [...prev, ...applySort(rows, sort)])
+      setListings(prev => [...prev, ...rows])
       setPage(nextPage)
       setHasMore(rows.length === PAGE_SIZE)
     } catch {}
