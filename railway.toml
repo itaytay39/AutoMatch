@@ -1,6 +1,7 @@
 [build]
 builder = "dockerfile"
 
+# ── API ────────────────────────────────────────────────────────
 [[services]]
 name = "api"
 dockerfilePath = "services/api/Dockerfile"
@@ -11,15 +12,31 @@ healthcheckTimeout = 30
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
 
+[[services.variables]]
+name = "NODE_ENV"
+value = "production"
+
+[[services.variables]]
+name = "PORT"
+value = "3000"
+
+# ── Scraper ────────────────────────────────────────────────────
 [[services]]
 name = "scraper"
 dockerfilePath = "services/scraper/Dockerfile"
 
 [services.deploy]
 restartPolicyType = "always"
-# Scraper needs more memory for Playwright + Chromium
-# Set in Railway dashboard: Memory = 2GB, CPU = 1 vCPU
 
+[[services.variables]]
+name = "NODE_ENV"
+value = "production"
+
+[[services.variables]]
+name = "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD"
+value = "1"
+
+# ── Notifications ──────────────────────────────────────────────
 [[services]]
 name = "notifications"
 dockerfilePath = "services/notifications/Dockerfile"
@@ -27,3 +44,7 @@ dockerfilePath = "services/notifications/Dockerfile"
 [services.deploy]
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
+
+[[services.variables]]
+name = "NODE_ENV"
+value = "production"
