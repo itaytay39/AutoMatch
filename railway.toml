@@ -17,3 +17,13 @@ dockerfilePath = "services/scraper/Dockerfile"
 
 [services.deploy]
 restartPolicyType = "always"
+# Scraper needs more memory for Playwright + Chromium
+# Set in Railway dashboard: Memory = 2GB, CPU = 1 vCPU
+
+[[services]]
+name = "notifications"
+dockerfilePath = "services/notifications/Dockerfile"
+
+[services.deploy]
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3

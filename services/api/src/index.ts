@@ -8,6 +8,7 @@ import listingsRoute from './routes/listings.js'
 import alertsRoute from './routes/alerts.js'
 import usersRoute from './routes/users.js'
 import vehicleRoute from './routes/vehicle.js'
+import adminRoute from './routes/admin.js'
 
 const app = Fastify({
   logger: {
@@ -27,6 +28,7 @@ await app.register(listingsRoute, { prefix: '/api/v1' })
 await app.register(alertsRoute, { prefix: '/api/v1' })
 await app.register(usersRoute, { prefix: '/api/v1' })
 await app.register(vehicleRoute, { prefix: '/api/v1' })
+await app.register(adminRoute,  { prefix: '/api/v1' })
 
 app.get('/health', async () => ({
   status: 'ok',
