@@ -3,61 +3,61 @@ import { newStealthContext, randomDelay } from '../core/browser.js'
 import { normalizeMake, normalizeCity, normalizePrice, normalizeMileage, normalizeYear } from '../core/normalizer.js'
 
 // yad2 — two strategies:
-//   1. Apify actor (preferred, requires APIFY_TOKEN)
-//   2. Playwright stealth (fallback, may be blocked)
+//   1. Internal JSON API (preferred, no token needed)
+//   2. Playwright stealth (fallback)
 
-const APIFY_TOKEN = process.env.APIFY_TOKEN
-const APIFY_ACTOR = 'apify/yad2-scraper'
+const GW_BASE = 'https://gw.yad2.co.il/feed-search-legacy/vehicles/cars'
 
-async function scrapeViaApify(criteria: SearchCriteria): Promise<Listing[]> {
-  const input = {
-    searchType: 'cars',
-    manufacturer: criteria.make ?? '',
-    model:        criteria.model ?? '',
-    yearFrom:     criteria.yearMin ?? '',
-    priceTo:      criteria.maxPrice ?? '',
-    kmTo:         criteria.maxKm ?? '',
-    maxItems:     40,
-  }
+const GW_HEADERS = {
+  'Accept': 'application/json, text/plain, */*',
+  'Accept-Language': 'he-IL,he;q=0.9,en-US;q=0.8',
+  'Referer': 'https://www.yad2.co.il/',
+  'Origin': 'https://www.yad2.co.il',
+  'mobile-app': 'false',
+  'User-Agent': 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+}
 
-  // Start actor run
-  const runRes = await fetch(
-    `https://api.apify.com/v2/acts/${APIFY_ACTOR}/runs?token=${APIFY_TOKEN}`,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input }) }
-  )
-  const { data: runData } = await runRes.json() as any
-  const runId = runData?.id
-  if (!runId) throw new Error('Apify: no run id')
+async function scrapeViaAPI(criteria: SearchCriteria): Promise<Listing[]> {
+  const params = new URLSearchParams({ forceLdLoad: 'true' })
+  if (criteria.make)     params.set('manufacturer', criteria.make)
+  if (criteria.model)    params.set('model',         criteria.model)
+  if (criteria.yearMin)  params.set('year',           `${criteria.yearMin}-${criteria.yearMax ?? new Date().getFullYear()}`)
+  if (criteria.maxPrice) params.set('price',          `0-${criteria.maxPrice}`)
+  if (criteria.maxKm)    params.set('km',             `0-${criteria.maxKm}`)
+  params.set('rows', '40')
+  params.set('page', '1')
 
-  // Poll until done (max 90s)
-  for (let i = 0; i < 18; i++) {
-    await new Promise(r => setTimeout(r, 5_000))
-    const statusRes = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_TOKEN}`)
-    const { data: st } = await statusRes.json() as any
-    if (st?.status === 'SUCCEEDED') break
-    if (st?.status === 'FAILED' || st?.status === 'ABORTED') throw new Error(`Apify run ${st.status}`)
-  }
+  const res = await fetch(`${GW_BASE}?${params}`, { headers: GW_HEADERS })
+  if (!res.ok) throw new Error(`yad2 API ${res.status}`)
 
-  // Fetch dataset
-  const dsRes = await fetch(
-    `https://api.apify.com/v2/actor-runs/${runId}/dataset/items?token=${APIFY_TOKEN}&limit=40`
-  )
-  const items = await dsRes.json() as any[]
+  const json = await res.json() as any
+  const items: any[] = json?.data?.feed?.feed_items ?? []
 
-  return items.map(item => ({
-    externalId:  String(item.id ?? item.adId ?? ''),
-    source:      'yad2',
-    url:         item.url ?? `https://www.yad2.co.il/item/${item.id}`,
-    title:       `${item.manufacturer ?? ''} ${item.model ?? ''}`.trim(),
-    make:        normalizeMake(item.manufacturer ?? ''),
-    model:       item.model ?? '',
-    year:        normalizeYear(String(item.year ?? '')),
-    mileage:     normalizeMileage(String(item.km ?? '')),
-    price:       normalizePrice(String(item.price ?? '')),
-    city:        normalizeCity(item.city ?? ''),
-    images:      item.images ?? (item.image ? [item.image] : []),
-    description: item.description ?? null,
-  })).filter(l => l.images.length > 0 && l.price > 0)
+  return items
+    .filter(item => item.type !== 'ad' && item.id)
+    .map(item => {
+      const imgs: string[] = []
+      if (item.images)        imgs.push(...(item.images as string[]))
+      else if (item.main_image) imgs.push(item.main_image)
+
+      return {
+        externalId:  String(item.id),
+        source:      'yad2',
+        url:         item.link_url
+          ? `https://www.yad2.co.il${item.link_url}`
+          : `https://www.yad2.co.il/item/${item.id}`,
+        title:       `${item.manufacturer ?? ''} ${item.model ?? ''}`.trim(),
+        make:        normalizeMake(item.manufacturer ?? ''),
+        model:       item.model ?? '',
+        year:        normalizeYear(String(item.year ?? '')),
+        mileage:     normalizeMileage(String(item.Hand_km ?? item.km ?? '')),
+        price:       normalizePrice(String(item.price ?? '')),
+        city:        normalizeCity(item.city ?? item.area_name ?? ''),
+        images:      imgs,
+        description: item.info_text ?? null,
+      }
+    })
+    .filter(l => l.images.length > 0 && l.price > 0)
 }
 
 async function scrapeViaPlaywright(criteria: SearchCriteria): Promise<Listing[]> {
@@ -95,17 +95,17 @@ async function scrapeViaPlaywright(criteria: SearchCriteria): Promise<Listing[]>
       if (!item.id || !item.price) continue
       const [make, ...modelParts] = item.title.split(' ')
       listings.push({
-        externalId: item.id,
-        source:     'yad2',
-        url:        item.href || `https://www.yad2.co.il/item/${item.id}`,
-        title:      item.title,
-        make:       normalizeMake(make),
-        model:      modelParts.join(' '),
-        year:       normalizeYear(item.year),
-        mileage:    normalizeMileage(item.km),
-        price:      normalizePrice(item.price),
-        city:       normalizeCity(item.city),
-        images:     item.img ? [item.img] : [],
+        externalId:  item.id,
+        source:      'yad2',
+        url:         item.href || `https://www.yad2.co.il/item/${item.id}`,
+        title:       item.title,
+        make:        normalizeMake(make),
+        model:       modelParts.join(' '),
+        year:        normalizeYear(item.year),
+        mileage:     normalizeMileage(item.km),
+        price:       normalizePrice(item.price),
+        city:        normalizeCity(item.city),
+        images:      item.img ? [item.img] : [],
         description: null,
       })
     }
@@ -121,15 +121,13 @@ export const yad2Connector: CarConnector = {
   baseUrl: 'https://www.yad2.co.il',
 
   async search(criteria: SearchCriteria): Promise<Listing[]> {
-    if (APIFY_TOKEN) {
-      try {
-        console.log('[yad2] using Apify actor')
-        return await scrapeViaApify(criteria)
-      } catch (err: any) {
-        console.warn('[yad2] Apify failed, falling back to Playwright:', err.message)
-      }
+    try {
+      console.log('[yad2] using internal JSON API')
+      return await scrapeViaAPI(criteria)
+    } catch (err: any) {
+      console.warn('[yad2] API failed, falling back to Playwright:', err.message)
+      return scrapeViaPlaywright(criteria)
     }
-    return scrapeViaPlaywright(criteria)
   },
 
   async fetchDetails(url: string): Promise<Partial<Listing>> {
