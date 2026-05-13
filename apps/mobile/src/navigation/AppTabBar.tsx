@@ -1,5 +1,5 @@
-import React from 'react'
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import React, { useRef } from 'react'
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs'
@@ -20,6 +20,7 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
   const insets = useSafeAreaInsets()
   const savedIds = useSaved()
   const savedCount = savedIds.length
+  const scaleAnims = useRef<Map<string, Animated.Value>>(new Map()).current
 
   return (
     <View style={[s.wrap, { paddingBottom: Math.max(insets.bottom, 8) }]}>
@@ -30,7 +31,16 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
           const isFocused = state.index === i
           const icons = TAB_ICONS[route.name] ?? { icon: 'ellipse-outline', iconActive: 'ellipse' }
 
+          if (!scaleAnims.has(route.key)) {
+            scaleAnims.set(route.key, new Animated.Value(1))
+          }
+          const scaleAnim = scaleAnims.get(route.key)!
+
           const onPress = () => {
+            Animated.sequence([
+              Animated.spring(scaleAnim, { toValue: 0.84, useNativeDriver: true, tension: 300, friction: 7 }),
+              Animated.spring(scaleAnim, { toValue: 1,    useNativeDriver: true, tension: 200, friction: 9 }),
+            ]).start()
             const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true })
             if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name)
           }
@@ -41,11 +51,12 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
             <TouchableOpacity
               key={route.key}
               onPress={onPress}
-              activeOpacity={0.8}
+              activeOpacity={1}
               style={[s.tab, isFocused && s.tabActive]}
               accessibilityRole="button"
               accessibilityState={isFocused ? { selected: true } : {}}
             >
+              <Animated.View style={[s.tabInner, { transform: [{ scale: scaleAnim }] }]}>
               <View>
                 <Ionicons
                   name={isFocused ? icons.iconActive : icons.icon}
@@ -62,6 +73,7 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
               {isFocused && (
                 <Text style={s.tabLabel}>{label}</Text>
               )}
+              </Animated.View>
             </TouchableOpacity>
           )
         })}
@@ -92,14 +104,17 @@ const s = StyleSheet.create({
     ...shadows.md,
   },
   tab: {
+    borderRadius: 24,
+    minWidth: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tabInner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     paddingVertical: 10,
     paddingHorizontal: 14,
-    borderRadius: 24,
-    minWidth: 44,
-    justifyContent: 'center',
   },
   tabActive: {
     backgroundColor: colors.accent,

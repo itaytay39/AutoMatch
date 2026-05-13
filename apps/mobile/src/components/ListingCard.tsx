@@ -1,5 +1,5 @@
-import React, { useCallback } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Image, Dimensions } from 'react-native'
+import React, { useCallback, useEffect, useRef } from 'react'
+import { View, Text, TouchableOpacity, StyleSheet, Image, Dimensions, Animated } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import Svg, { Polyline } from 'react-native-svg'
 import { colors, radii, spacing, fontSize, shadows } from '../theme/tokens'
@@ -30,6 +30,7 @@ export interface ListingCardData {
 interface Props {
   listing: ListingCardData
   onPress?: () => void
+  index?: number
 }
 
 const SOURCE_DOT: Record<string, string> = {
@@ -74,13 +75,29 @@ function Sparkline({ values, width = 64, height = 22 }: { values: number[]; widt
   )
 }
 
-export function ListingCard({ listing, onPress }: Props) {
+export function ListingCard({ listing, onPress, index = 0 }: Props) {
   const saved = useSaved()
   const isSaved = saved.has(listing.id)
+
+  const fadeAnim  = useRef(new Animated.Value(0)).current
+  const slideAnim = useRef(new Animated.Value(16)).current
+  const heartScale = useRef(new Animated.Value(1)).current
+
+  useEffect(() => {
+    const delay = Math.min(index * 55, 330)
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 300, delay, useNativeDriver: true }),
+      Animated.spring(slideAnim, { toValue: 0, delay, useNativeDriver: true, tension: 80, friction: 12 }),
+    ]).start()
+  }, [])
 
   const handleSave = useCallback((e: any) => {
     e?.stopPropagation?.()
     toggleSaved(listing.id)
+    Animated.sequence([
+      Animated.spring(heartScale, { toValue: 1.45, useNativeDriver: true, tension: 300, friction: 7 }),
+      Animated.spring(heartScale, { toValue: 1,    useNativeDriver: true, tension: 200, friction: 10 }),
+    ]).start()
   }, [listing.id])
 
   const deal = DEAL_CONFIG[listing.dealScore ?? 'fair']
@@ -107,6 +124,7 @@ export function ListingCard({ listing, onPress }: Props) {
     : null
 
   return (
+    <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
     <TouchableOpacity style={s.card} onPress={onPress} activeOpacity={0.93}>
 
       <View style={s.imageArea}>
@@ -128,11 +146,13 @@ export function ListingCard({ listing, onPress }: Props) {
             onPress={handleSave}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons
-              name={isSaved ? 'heart' : 'heart-outline'}
-              size={15}
-              color={isSaved ? colors.danger : colors.fg2}
-            />
+            <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+              <Ionicons
+                name={isSaved ? 'heart' : 'heart-outline'}
+                size={15}
+                color={isSaved ? colors.danger : colors.fg2}
+              />
+            </Animated.View>
           </TouchableOpacity>
 
           <View style={s.sourceBadge}>
@@ -195,6 +215,7 @@ export function ListingCard({ listing, onPress }: Props) {
       </View>
 
     </TouchableOpacity>
+    </Animated.View>
   )
 }
 

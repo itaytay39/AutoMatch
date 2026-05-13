@@ -480,11 +480,29 @@ function PriceGauge({ pct }: { pct: number }) {
   const cx = W / 2
   const cy = H
   const r = H - 12
+
   const clampedPct = Math.max(-30, Math.min(30, pct))
-  const normalised = (clampedPct + 30) / 60
-  const angle = Math.PI + normalised * Math.PI
+  const targetNorm = (clampedPct + 30) / 60
+
+  const animVal = useRef(new Animated.Value(0.5)).current
+  const [animNorm, setAnimNorm] = useState(0.5)
+
+  useEffect(() => {
+    const id = animVal.addListener(({ value }) => setAnimNorm(value))
+    Animated.spring(animVal, {
+      toValue: targetNorm,
+      useNativeDriver: false,
+      tension: 38,
+      friction: 8,
+      delay: 350,
+    }).start()
+    return () => animVal.removeListener(id)
+  }, [targetNorm])
+
+  const angle = Math.PI + animNorm * Math.PI
   const nx = cx + r * Math.cos(angle)
   const ny = cy + r * Math.sin(angle)
+
   const arcGreen  = describeArc(cx, cy, r, 180, 240)
   const arcYellow = describeArc(cx, cy, r, 240, 300)
   const arcRed    = describeArc(cx, cy, r, 300, 360)
