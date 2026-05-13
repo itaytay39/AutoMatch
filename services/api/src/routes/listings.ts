@@ -19,6 +19,7 @@ const SearchSchema = z.object({
   model: z.string().optional(),
   yearMin: z.coerce.number().optional(),
   yearMax: z.coerce.number().optional(),
+  minPrice: z.coerce.number().optional(),
   maxPrice: z.coerce.number().optional(),
   maxKm: z.coerce.number().optional(),
   city: z.string().optional(),
@@ -47,7 +48,12 @@ const listings: FastifyPluginAsync = async (app) => {
       ...(query.model && { model: { contains: query.model, mode: 'insensitive' as const } }),
       ...(query.yearMin && { year: { gte: query.yearMin } }),
       ...(query.yearMax && { year: { lte: query.yearMax } }),
-      ...(query.maxPrice && { price: { lte: query.maxPrice } }),
+      ...(query.minPrice || query.maxPrice ? {
+        price: {
+          ...(query.minPrice && { gte: query.minPrice }),
+          ...(query.maxPrice && { lte: query.maxPrice }),
+        }
+      } : {}),
       ...(query.maxKm && { mileage: { lte: query.maxKm } }),
       ...(query.city && { city: { contains: query.city, mode: 'insensitive' as const } }),
     }

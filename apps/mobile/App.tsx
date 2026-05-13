@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 import { I18nManager } from 'react-native'
+import { NavigationContainerRef } from '@react-navigation/native'
 import { NavigationContainer } from '@react-navigation/native'
 import { createStackNavigator } from '@react-navigation/stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
@@ -57,6 +58,7 @@ function AppTabs() {
 }
 
 export default function App() {
+  const navRef = useRef<NavigationContainerRef<RootStackParamList>>(null)
   const [fontsLoaded] = useFonts({
     Rubik_300Light,
     Rubik_400Regular,
@@ -76,8 +78,11 @@ export default function App() {
     notifListener.current = addNotificationListener(notification => {
       console.log('Push received:', notification.request.content.title)
     })
-    responseListener.current = addResponseListener(_response => {
-      // Navigate to Detail when push notification is tapped — handled by useNavigation in child
+    responseListener.current = addResponseListener(response => {
+      const listingId = response.notification.request.content.data?.listingId as string | undefined
+      if (listingId && navRef.current) {
+        navRef.current.navigate('Detail', { listingId })
+      }
     })
     return () => {
       notifListener.current?.remove()
@@ -89,7 +94,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
+      <NavigationContainer ref={navRef}>
         <RootStack.Navigator screenOptions={{ headerShown: false, cardStyle: { backgroundColor: colors.bg0, flex: 1 } }}>
           <RootStack.Screen name="Main" component={AppTabs} />
           <RootStack.Screen

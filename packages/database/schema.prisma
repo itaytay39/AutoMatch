@@ -27,6 +27,9 @@ model Listing {
 
   @@unique([source, externalId])
   @@index([make, model, year])
+  @@index([price])
+  @@index([year])
+  @@index([city])
 }
 
 model PriceSnapshot {

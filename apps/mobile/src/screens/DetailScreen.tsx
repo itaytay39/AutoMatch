@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Image, Dimensions, Animated, Linking, ActivityIndicator,
-  StatusBar, Modal, Platform,
+  StatusBar, Modal, Platform, Share,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -83,6 +83,17 @@ export function DetailScreen({ route, navigation }: Props) {
   }, [listingId])
 
   const handleSave = useCallback(() => { toggleSaved(listingId) }, [listingId])
+
+  const handleShare = useCallback(async () => {
+    if (!listing) return
+    const title = `${listing.make} ${listing.model} ${listing.year}`
+    const price = `₪${listing.price.toLocaleString('he-IL')}`
+    await Share.share({
+      title,
+      message: `${title} — ${price}${listing.city ? ` · ${listing.city}` : ''}\n${listing.url}`,
+      url: listing.url,
+    })
+  }, [listing])
   const openListing = useCallback(() => {
     if (listing?.url) Linking.openURL(listing.url)
   }, [listing])
@@ -355,7 +366,7 @@ export function DetailScreen({ route, navigation }: Props) {
           <Ionicons name="chevron-forward" size={22} color={colors.fg1} />
         </TouchableOpacity>
         <View style={s.headerRight}>
-          <TouchableOpacity style={s.headerCircle}>
+          <TouchableOpacity style={s.headerCircle} onPress={handleShare}>
             <Ionicons name="share-outline" size={20} color={colors.fg1} />
           </TouchableOpacity>
           <TouchableOpacity
