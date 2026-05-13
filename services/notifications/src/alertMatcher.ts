@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client'
-import { sendPush } from './firebase.js'
+import { sendPush, sendMulticast } from './expoPush.js'
 
 const prisma = new PrismaClient()
 
@@ -55,7 +55,6 @@ export async function notifyPriceDrop(listingId: string, oldPrice: number, newPr
   const title = `ירידת מחיר — ${listing.make} ${listing.model}`
   const body = `ירד ב-${drop}% · עכשיו ₪ ${newPrice.toLocaleString('he-IL')}`
 
-  const { sendMulticast } = await import('./firebase.js')
   await sendMulticast(tokens, title, body, { listingId, type: 'price_drop', drop: String(drop) })
 }
 
