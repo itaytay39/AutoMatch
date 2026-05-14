@@ -40,10 +40,44 @@ export function startWorker() {
           const existing = await prisma.listing.findUnique({
             where: { source_externalId: { source: listing.source, externalId: listing.externalId } },
           })
+          const createData = {
+            externalId:  listing.externalId,
+            source:      listing.source,
+            url:         listing.url,
+            title:       listing.title,
+            make:        listing.make,
+            model:       listing.model,
+            year:        listing.year,
+            price:       listing.price,
+            mileage:     listing.mileage,
+            city:        listing.city,
+            description: listing.description,
+            images:      listing.images,
+            plate:       listing.plate,
+            hand:        listing.hand,
+            trim:        listing.trim,
+            engine:      listing.engine,
+            fuelType:    listing.fuelType,
+            seller:      listing.seller,
+            region:      listing.region,
+            daysOnLot:   listing.daysOnLot,
+          }
           const saved = await prisma.listing.upsert({
             where: { source_externalId: { source: listing.source, externalId: listing.externalId } },
-            create: listing,
-            update: { price: listing.price, mileage: listing.mileage, images: listing.images },
+            create: createData,
+            update: {
+              price:     listing.price,
+              mileage:   listing.mileage,
+              images:    listing.images,
+              daysOnLot: listing.daysOnLot,
+              plate:     listing.plate ?? undefined,
+              hand:      listing.hand ?? undefined,
+              trim:      listing.trim ?? undefined,
+              engine:    listing.engine ?? undefined,
+              fuelType:  listing.fuelType ?? undefined,
+              seller:    listing.seller ?? undefined,
+              region:    listing.region ?? undefined,
+            },
           })
           await prisma.priceSnapshot.create({ data: { listingId: saved.id, price: listing.price } })
 

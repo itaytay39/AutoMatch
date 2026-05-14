@@ -40,6 +40,11 @@ async function scrapeViaAPI(criteria: SearchCriteria): Promise<Listing[]> {
       if (item.images)        imgs.push(...(item.images as string[]))
       else if (item.main_image) imgs.push(item.main_image)
 
+      const dateAdded = item.date_added ?? item.date ?? null
+      const daysOnLot = dateAdded
+        ? Math.floor((Date.now() - new Date(dateAdded).getTime()) / 86_400_000)
+        : undefined
+
       return {
         externalId:  String(item.id),
         source:      'yad2',
@@ -53,8 +58,16 @@ async function scrapeViaAPI(criteria: SearchCriteria): Promise<Listing[]> {
         mileage:     normalizeMileage(String(item.Hand_km ?? item.km ?? '')),
         price:       normalizePrice(String(item.price ?? '')),
         city:        normalizeCity(item.city ?? item.area_name ?? ''),
+        region:      item.area_name ?? undefined,
         images:      imgs,
         description: item.info_text ?? null,
+        hand:        item.Hand ? parseInt(String(item.Hand), 10) || undefined : undefined,
+        trim:        item.TrimLevel ?? item.trim_level ?? undefined,
+        engine:      item.EngineCapacity ? `${item.EngineCapacity}cc` : undefined,
+        fuelType:    item.fuel_text ?? item.fuel ?? undefined,
+        seller:      item.contact_name ?? item.agency_name ?? undefined,
+        plate:       item.license_number ?? undefined,
+        daysOnLot:   daysOnLot && daysOnLot >= 0 ? daysOnLot : undefined,
       }
     })
     .filter(l => l.images.length > 0 && l.price > 0)

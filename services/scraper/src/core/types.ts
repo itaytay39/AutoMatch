@@ -22,6 +22,15 @@ export interface Listing {
   city?: string
   description?: string
   images: string[]
+  // enriched fields
+  plate?: string
+  hand?: number
+  trim?: string
+  engine?: string
+  fuelType?: string
+  seller?: string
+  region?: string
+  daysOnLot?: number
 }
 
 export interface CarConnector {

@@ -33,7 +33,11 @@ railway variables set \
   PORT="3000"
 
 echo ""
-echo "Step 5: Deploying all services..."
+echo "Step 5: Running DB migrations..."
+railway run --service api npx prisma migrate deploy --schema packages/database/schema.prisma 2>/dev/null || echo "  (migrations will run on startup)"
+
+echo ""
+echo "Step 6: Deploying all services..."
 railway up --detach
 
 echo ""
