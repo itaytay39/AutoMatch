@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Image, Dimensions, Animated, Linking, ActivityIndicator,
-  StatusBar, Modal, Platform, Share,
+  StatusBar, Modal, Platform, Share, TextInput, KeyboardAvoidingView,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -69,6 +69,10 @@ export function DetailScreen({ route, navigation }: Props) {
   const [loading, setLoading] = useState(true)
   const [imgIdx, setImgIdx] = useState(0)
   const [financeOpen, setFinanceOpen] = useState(false)
+  const [plateInput, setPlateInput] = useState('')
+  const [vehicleLoading, setVehicleLoading] = useState(false)
+  const [vehicleResult, setVehicleResult] = useState<Awaited<ReturnType<typeof api.checkVehicle>> | null>(null)
+  const [vehicleError, setVehicleError] = useState<string | null>(null)
   const [downPayment, setDownPayment] = useState(20)
   const [months, setMonths] = useState(60)
   const scrollX = useRef(new Animated.Value(0)).current
@@ -83,6 +87,22 @@ export function DetailScreen({ route, navigation }: Props) {
   }, [listingId])
 
   const handleSave = useCallback(() => { toggleSaved(listingId) }, [listingId])
+
+  const handleVehicleLookup = useCallback(async () => {
+    const clean = plateInput.replace(/[^0-9]/g, '')
+    if (clean.length < 7) return
+    setVehicleLoading(true)
+    setVehicleError(null)
+    setVehicleResult(null)
+    try {
+      const result = await api.checkVehicle(clean, listing?.mileage ?? undefined)
+      setVehicleResult(result)
+    } catch {
+      setVehicleError('שגיאת חיבור — נסה שוב')
+    } finally {
+      setVehicleLoading(false)
+    }
+  }, [plateInput, listing?.mileage])
 
   const handleShare = useCallback(async () => {
     if (!listing) return
@@ -355,6 +375,95 @@ export function DetailScreen({ route, navigation }: Props) {
               </View>
             </View>
           )}
+
+          {/* VEHICLE LOOKUP */}
+          <View style={s.card}>
+            <Text style={s.cardTitle}>בדיקת רישוי</Text>
+            <Text style={s.vehicleHint}>הזן מספר רישוי לבדיקת נתוני הרכב ב-data.gov.il</Text>
+            <View style={s.plateRow}>
+              <TouchableOpacity
+                style={[s.lookupBtn, (vehicleLoading || plateInput.replace(/[^0-9]/g,'').length < 7) && s.lookupBtnDisabled]}
+                onPress={handleVehicleLookup}
+                disabled={vehicleLoading || plateInput.replace(/[^0-9]/g,'').length < 7}
+                activeOpacity={0.8}
+              >
+                {vehicleLoading
+                  ? <ActivityIndicator size="small" color={colors.onAccent} />
+                  : <Text style={s.lookupBtnText}>בדוק</Text>
+                }
+              </TouchableOpacity>
+              <TextInput
+                style={s.plateInput}
+                placeholder="לדוג׳: 1234567"
+                placeholderTextColor={colors.fg4}
+                value={plateInput}
+                onChangeText={setPlateInput}
+                keyboardType="number-pad"
+                maxLength={8}
+                textAlign="right"
+                returnKeyType="done"
+                onSubmitEditing={handleVehicleLookup}
+              />
+            </View>
+
+            {vehicleError && (
+              <Text style={s.vehicleError}>{vehicleError}</Text>
+            )}
+
+            {vehicleResult && (
+              <View style={s.vehicleResults}>
+                {/* Trust score bar */}
+                <View style={s.trustRow}>
+                  <View style={[s.trustBar, { width: `${vehicleResult.trustScore}%` as any,
+                    backgroundColor: vehicleResult.trustScore >= 70 ? colors.success
+                      : vehicleResult.trustScore >= 40 ? colors.warning : colors.danger }]} />
+                  <View style={s.trustBg} />
+                  <Text style={[s.trustScore, { color: vehicleResult.trustScore >= 70 ? colors.success
+                    : vehicleResult.trustScore >= 40 ? colors.warning : colors.danger }]}>
+                    ציון אמון {vehicleResult.trustScore}/100
+                  </Text>
+                </View>
+
+                {vehicleResult.kmMismatch && (
+                  <View style={s.mismatchBanner}>
+                    <Ionicons name="warning" size={14} color={colors.danger} />
+                    <Text style={s.mismatchText}>חשד להחזרת מד קילומטרים</Text>
+                  </View>
+                )}
+
+                {vehicleResult.record && (
+                  <View style={s.govGrid}>
+                    {[
+                      { label: 'יצרן', value: vehicleResult.record.manufacturer },
+                      { label: 'שנת ייצור', value: vehicleResult.record.year.toString() },
+                      { label: 'דלק', value: vehicleResult.record.fuelType },
+                      { label: 'בעלים', value: vehicleResult.record.ownerCount != null ? `${vehicleResult.record.ownerCount}` : '—' },
+                      { label: 'תאונות', value: vehicleResult.record.accidentCount != null ? `${vehicleResult.record.accidentCount}` : '—' },
+                      { label: 'ק״מ בטסט', value: vehicleResult.record.lastTestKm != null ? vehicleResult.record.lastTestKm.toLocaleString('he-IL') : '—' },
+                      { label: 'טסט אחרון', value: vehicleResult.record.lastTestDate ?? '—' },
+                      { label: 'צבע', value: vehicleResult.record.color },
+                    ].map((item, i) => (
+                      <View key={i} style={s.govTile}>
+                        <Text style={s.govLabel}>{item.label}</Text>
+                        <Text style={s.govValue}>{item.value}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {vehicleResult.fraudSignals.length > 0 && (
+                  <View style={s.signalsWrap}>
+                    {vehicleResult.fraudSignals.map((sig, i) => (
+                      <View key={i} style={s.signalRow}>
+                        <Ionicons name="alert-circle-outline" size={13} color={colors.warning} />
+                        <Text style={s.signalText}>{sig}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
 
           <View style={{ height: 120 }} />
         </View>
@@ -860,5 +969,86 @@ const s = StyleSheet.create({
   },
   sliderPipTextActive: {
     color: colors.accent, fontFamily: fonts.bold,
+  },
+
+  vehicleHint: {
+    fontSize: fontSize.caption, color: colors.fg3, fontFamily: fonts.regular,
+    textAlign: 'right', marginBottom: spacing[3],
+  },
+  plateRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing[2],
+    marginBottom: spacing[2],
+  },
+  plateInput: {
+    flex: 1, height: 48,
+    backgroundColor: colors.bg0, borderRadius: radii.lg,
+    borderWidth: 1, borderColor: colors.border2,
+    paddingHorizontal: spacing[4],
+    fontSize: fontSize.title, fontFamily: fonts.medium,
+    color: colors.fg1, textAlign: 'right',
+  },
+  lookupBtn: {
+    height: 48, paddingHorizontal: spacing[4],
+    backgroundColor: colors.accent, borderRadius: radii.lg,
+    alignItems: 'center', justifyContent: 'center',
+    minWidth: 72,
+  },
+  lookupBtnDisabled: { opacity: 0.45 },
+  lookupBtnText: {
+    color: colors.onAccent, fontSize: fontSize.body, fontFamily: fonts.semibold,
+  },
+  vehicleError: {
+    color: colors.danger, fontSize: fontSize.caption, fontFamily: fonts.regular,
+    textAlign: 'right', marginTop: spacing[2],
+  },
+  vehicleResults: { marginTop: spacing[4], gap: spacing[3] },
+  trustRow: {
+    position: 'relative', height: 28,
+    justifyContent: 'center', marginBottom: 4,
+  },
+  trustBg: {
+    position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
+    backgroundColor: colors.border1, borderRadius: radii.md,
+  },
+  trustBar: {
+    position: 'absolute', left: 0, top: 0, bottom: 0,
+    borderRadius: radii.md, zIndex: 1,
+  },
+  trustScore: {
+    position: 'absolute', right: spacing[3], zIndex: 2,
+    fontSize: fontSize.caption, fontFamily: fonts.bold,
+  },
+  mismatchBanner: {
+    flexDirection: 'row-reverse', alignItems: 'center', gap: 6,
+    backgroundColor: colors.warningSoft, borderRadius: radii.md,
+    paddingHorizontal: spacing[3], paddingVertical: spacing[2],
+  },
+  mismatchText: {
+    color: colors.warning, fontSize: fontSize.caption, fontFamily: fonts.semibold,
+  },
+  govGrid: {
+    flexDirection: 'row-reverse', flexWrap: 'wrap', gap: spacing[2],
+  },
+  govTile: {
+    width: '47%', backgroundColor: colors.bg0,
+    borderRadius: radii.md, padding: spacing[3],
+    borderWidth: 0.5, borderColor: colors.border1,
+  },
+  govLabel: {
+    fontSize: 10, color: colors.fg3, fontFamily: fonts.medium,
+    textAlign: 'right', textTransform: 'uppercase', letterSpacing: 0.4,
+    marginBottom: 3,
+  },
+  govValue: {
+    fontSize: fontSize.body, color: colors.fg1, fontFamily: fonts.bold,
+    textAlign: 'right',
+  },
+  signalsWrap: { gap: spacing[2] },
+  signalRow: {
+    flexDirection: 'row-reverse', alignItems: 'flex-start', gap: 6,
+  },
+  signalText: {
+    flex: 1, fontSize: fontSize.caption, color: colors.warning,
+    fontFamily: fonts.regular, textAlign: 'right',
   },
 })

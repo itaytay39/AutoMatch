@@ -21,6 +21,14 @@ model Listing {
   city          String?
   description   String?
   images        String[]
+  plate         String?
+  hand          Int?
+  trim          String?
+  engine        String?
+  fuelType      String?
+  seller        String?
+  region        String?
+  daysOnLot     Int?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   priceHistory  PriceSnapshot[]
@@ -30,6 +38,7 @@ model Listing {
   @@index([price])
   @@index([year])
   @@index([city])
+  @@index([plate])
 }
 
 model PriceSnapshot {

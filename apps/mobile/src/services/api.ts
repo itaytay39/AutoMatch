@@ -32,4 +32,19 @@ export const api = {
 
   deleteAlert: (id: string) =>
     req(`/alerts/${id}`, { method: 'DELETE' }),
+
+  checkVehicle: (plate: string, km?: number) => {
+    const qs = km != null ? `?km=${km}` : ''
+    return req<{
+      record: {
+        plate: string; manufacturer: string; model: string; year: number
+        color: string; fuelType: string; lastTestDate: string | null
+        lastTestKm: number | null; ownerCount: number | null; accidentCount: number | null
+        isCommercial: boolean
+      } | undefined
+      fraudSignals: string[]
+      trustScore: number
+      kmMismatch: boolean
+    }>(`/vehicle/${encodeURIComponent(plate)}${qs}`)
+  },
 }
