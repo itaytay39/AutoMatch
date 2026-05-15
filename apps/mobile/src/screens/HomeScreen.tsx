@@ -5,6 +5,7 @@ import {
   ListRenderItem,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
@@ -94,33 +95,42 @@ export function HomeScreen() {
     <>
       <View style={s.hero}>
         <View style={s.heroHeaderRow}>
-          <View style={s.avatarCircle}>
-            <Text style={s.avatarText}>א</Text>
+          <TouchableOpacity style={s.searchIconBtn}>
+            <Ionicons name="search-outline" size={20} color={colors.fg2} />
+          </TouchableOpacity>
+          <View style={s.greetingWrap}>
+            <Text style={s.greetingSub}>שלום איתי</Text>
+            <Text style={s.greetingTitle}>2 רכבי יד 1 ירדו היום</Text>
           </View>
-          <Text style={s.brandText}>AutoMatch</Text>
+          <TouchableOpacity style={s.avatarCircle}>
+            <Text style={s.avatarText}>א</Text>
+          </TouchableOpacity>
         </View>
-        <Text style={s.heroTitle}>שלום,{'\n'}מה נמצא לך היום?</Text>
 
-        <View style={s.insightCard}>
+        <LinearGradient
+          colors={['#1E2A8C', '#3450E8', '#5E78F0']}
+          start={{ x: 0.85, y: 0 }}
+          end={{ x: 0.05, y: 1 }}
+          style={s.insightCard}
+        >
           <Text style={s.insightEyebrow}>ירידות מחיר השבוע</Text>
-          <Text style={s.insightHeadline}>ירידה ממוצעת של 3.1%{'\n'}בקטגוריות שלך</Text>
+          <View style={s.insightHeadlineRow}>
+            <Text style={s.insightPercent}>3.1%</Text>
+            <Text style={s.insightHeadlineSub}>ירידה ממוצעת</Text>
+          </View>
           <Text style={s.insightSub}>
             {goodDeals > 0
-              ? `${goodDeals} מודעות עם מחיר טוב מהממוצע זמינות כעת`
-              : 'עדכן העדפות כדי לקבל התראות אישיות'}
+              ? `${goodDeals} מודעות עם מחיר טוב מהממוצע`
+              : 'קורולה הייבריד יד 1 ירדה ב-₪4,100 השבוע'}
           </Text>
-          <View style={s.sparklineRow}>
-            <View style={s.sparklineBg}>
-              <View style={s.sparklineFill} />
-            </View>
-          </View>
           <TouchableOpacity
             style={s.insightBtn}
             onPress={() => (navigation as any).navigate('התראות')}
           >
             <Text style={s.insightBtnText}>צפה בירידות</Text>
+            <Ionicons name="chevron-back" size={15} color="#fff" />
           </TouchableOpacity>
-        </View>
+        </LinearGradient>
       </View>
 
       <View style={s.sheet}>
@@ -310,49 +320,67 @@ const s = StyleSheet.create({
   },
 
   heroHeaderRow: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: spacing[4],
   },
-  brandText: {
-    color: colors.accHome,
-    fontSize: fontSize.title,
-    fontFamily: fonts.bold,
-    letterSpacing: -0.4,
-  },
   avatarCircle: {
-    width: 38,
-    height: 38,
+    width: 44,
+    height: 44,
     borderRadius: radii.pill,
     backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#3450E8',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 4,
   },
   avatarText: {
-    color: colors.onAccent,
+    color: '#fff',
     fontSize: fontSize.title,
     fontFamily: fonts.bold,
   },
-
-  heroTitle: {
+  greetingWrap: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  greetingSub: {
+    color: colors.fg2,
+    fontSize: 13,
+    fontFamily: fonts.regular,
+  },
+  greetingTitle: {
     color: colors.fg1,
-    fontSize: fontSize.display2,
+    fontSize: 17,
     fontFamily: fonts.bold,
-    textAlign: 'right',
-    letterSpacing: -0.6,
-    lineHeight: 34,
-    marginBottom: spacing[4],
+    letterSpacing: -0.3,
+    textAlign: 'center',
+  },
+  searchIconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.border1,
+    backgroundColor: colors.bg1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   insightCard: {
-    backgroundColor: colors.bg1,
     borderRadius: radii.xxl,
     padding: spacing[5],
-    ...shadows.sm,
+    shadowColor: '#3450E8',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.45,
+    shadowRadius: 24,
+    elevation: 8,
   },
   insightEyebrow: {
-    color: colors.fg3,
+    color: 'rgba(255,255,255,0.9)',
     fontSize: fontSize.caption,
     fontFamily: fonts.semibold,
     textAlign: 'right',
@@ -360,52 +388,48 @@ const s = StyleSheet.create({
     letterSpacing: 0.6,
     marginBottom: spacing[2],
   },
-  insightHeadline: {
-    color: colors.fg1,
-    fontSize: 24,
-    fontFamily: fonts.bold,
-    textAlign: 'right',
-    letterSpacing: -0.5,
-    lineHeight: 30,
+  insightHeadlineRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
     marginBottom: spacing[2],
-  },
-  insightSub: {
-    color: colors.fg2,
-    fontSize: fontSize.body,
-    fontFamily: fonts.regular,
-    textAlign: 'right',
-    lineHeight: 20,
-    marginBottom: spacing[3],
-  },
-  sparklineRow: {
-    marginBottom: spacing[4],
-  },
-  sparklineBg: {
-    height: 40,
-    backgroundColor: colors.accentSoft,
-    borderRadius: radii.md,
-    overflow: 'hidden',
     justifyContent: 'flex-end',
   },
-  sparklineFill: {
-    height: 24,
-    backgroundColor: colors.accent,
-    opacity: 0.25,
-    borderRadius: radii.md,
-    width: '68%',
-    alignSelf: 'flex-end',
+  insightPercent: {
+    color: '#fff',
+    fontSize: 44,
+    fontFamily: fonts.bold,
+    letterSpacing: -1.2,
+    lineHeight: 48,
+  },
+  insightHeadlineSub: {
+    color: 'rgba(255,255,255,0.92)',
+    fontSize: 13,
+    fontFamily: fonts.semibold,
+  },
+  insightSub: {
+    color: 'rgba(255,255,255,0.88)',
+    fontSize: 12.5,
+    fontFamily: fonts.regular,
+    textAlign: 'right',
+    lineHeight: 18,
+    marginBottom: spacing[4],
   },
   insightBtn: {
-    backgroundColor: colors.accent,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.18)',
     borderRadius: radii.pill,
-    paddingVertical: 10,
-    paddingHorizontal: spacing[5],
+    paddingVertical: 8,
+    paddingHorizontal: 14,
     alignSelf: 'flex-end',
   },
   insightBtnText: {
-    color: colors.onAccent,
-    fontSize: fontSize.body,
+    color: '#fff',
+    fontSize: 13,
     fontFamily: fonts.semibold,
+    fontWeight: '700',
   },
 
   sheet: {
