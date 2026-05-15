@@ -6,9 +6,7 @@ export interface PlaywrightConnectorOpts {
   name: string
   baseUrl: string
   buildUrl: (criteria: SearchCriteria) => string
-  /** Called after page load — returns raw item objects */
   extractItems: (page: import('playwright').Page) => Promise<RawItem[]>
-  /** Optional: extra wait condition before extraction */
   waitSelector?: string
   waitTimeout?: number
 }
@@ -37,15 +35,18 @@ export function makePlaywrightConnector(opts: PlaywrightConnectorOpts): CarConne
       const listings: Listing[] = []
 
       try {
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 })
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 25_000 })
 
+        // Wait for content — try selector, then fallback to delay
         if (opts.waitSelector) {
           await page.waitForSelector(opts.waitSelector, {
-            timeout: opts.waitTimeout ?? 12_000,
-          }).catch(() => {/* page may not have results */})
-        } else {
-          await randomDelay(2_500, 4_500)
+            timeout: opts.waitTimeout ?? 10_000,
+          }).catch(() => {})
         }
+
+        // Scroll to trigger lazy-loaded images/content
+        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight / 2))
+        await randomDelay(1_000, 2_000)
 
         const items = await opts.extractItems(page)
 
@@ -86,8 +87,8 @@ export function makePlaywrightConnector(opts: PlaywrightConnectorOpts): CarConne
       const ctx = await newStealthContext()
       const page = await ctx.newPage()
       try {
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 })
-        await randomDelay(1_500, 3_000)
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 25_000 })
+        await randomDelay(1_000, 2_500)
 
         const images = await page.$$eval(
           'img[src*="photo"], img[src*="image"], img[src*="img"], img[src*="car"], img[src*="vehicle"], .gallery img, [class*="gallery"] img, [class*="slider"] img',
@@ -107,4 +108,36 @@ export function makePlaywrightConnector(opts: PlaywrightConnectorOpts): CarConne
       }
     },
   }
+}
+
+// Helper used by several connectors: extract from Next.js __NEXT_DATA__ or fall back to DOM
+export async function extractNextDataOrDom(
+  page: import('playwright').Page,
+  domSelector: string,
+  mapNextCar: (v: any) => RawItem,
+  mapDomEl: (els: Element[]) => RawItem[],
+  nextDataPaths: string[][]
+): Promise<RawItem[]> {
+  // Try __NEXT_DATA__ first (faster, no DOM parsing)
+  const nextData = await page.evaluate(() => {
+    const el = document.getElementById('__NEXT_DATA__')
+    if (!el) return null
+    try { return JSON.parse(el.textContent ?? '') } catch { return null }
+  })
+
+  if (nextData) {
+    for (const path of nextDataPaths) {
+      let node: any = nextData
+      for (const key of path) { node = node?.[key] }
+      if (Array.isArray(node) && node.length > 0) {
+        return node.slice(0, 40).map(mapNextCar)
+      }
+    }
+  }
+
+  // Fall back to DOM extraction
+  return page.$$eval(domSelector, (els) => {
+    // mapDomEl must be serialisable — use inline arrow fn in each connector
+    return (window as any).__domExtract?.(els) ?? []
+  }).catch(() => [])
 }

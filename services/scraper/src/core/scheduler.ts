@@ -7,9 +7,18 @@ import { SearchCriteria, Listing } from './types.js'
 const connection = process.env.REDIS_URL
   ? { url: process.env.REDIS_URL }
   : { host: process.env.REDIS_HOST ?? 'localhost', port: Number(process.env.REDIS_PORT ?? 6379) }
+
 const prisma = new PrismaClient()
 
 export const scrapeQueue = new Queue('scrape', { connection })
+
+const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> =>
+  Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`timeout after ${ms}ms`)), ms)
+    ),
+  ])
 
 export async function scheduleScrape(criteria: SearchCriteria) {
   await scrapeQueue.add('scrape-all', criteria, {
@@ -23,23 +32,31 @@ export function startWorker() {
     'scrape',
     async (job: Job<SearchCriteria>) => {
       const criteria = job.data
+      console.log(`[scraper] job #${job.id} starting — criteria:`, JSON.stringify(criteria))
+
       const perConnector = await Promise.allSettled(
         ALL_CONNECTORS.map(async c => {
           const start = Date.now()
           try {
-            const results = await c.search(criteria)
+            const results = await withTimeout(c.search(criteria), 30_000)
             const ms = Date.now() - start
-            console.log(`[${c.name}] ✓ ${results.length} listings (${ms}ms)`)
+            if (results.length > 0) {
+              console.log(`[${c.name}] ✓ ${results.length} listings (${ms}ms)`)
+            } else {
+              console.log(`[${c.name}] ○ 0 listings (${ms}ms)`)
+            }
             return results
           } catch (err: any) {
-            console.error(`[${c.name}] ✗ ${err.message}`)
+            console.error(`[${c.name}] ✗ ${err.message} (${Date.now() - start}ms)`)
             return [] as Listing[]
           }
         })
       )
 
       const listings = perConnector.flatMap(r => r.status === 'fulfilled' ? r.value : [])
+      console.log(`[scraper] total raw: ${listings.length}, deduplicating...`)
       const deduped = deduplicateListings(listings)
+      console.log(`[scraper] after dedup: ${deduped.length}`)
 
       const newListings: typeof deduped = []
       const updatedListings: typeof deduped = []
@@ -94,26 +111,30 @@ export function startWorker() {
           const enriched = { ...listing, id: saved.id }
           if (!existing) newListings.push(enriched)
           else updatedListings.push(enriched)
-        } catch (e) {
-          console.error('DB upsert error:', e)
+        } catch (e: any) {
+          console.error(`[scraper] DB upsert error (${listing.source}/${listing.externalId}):`, e.message)
         }
       }
 
-      // Enqueue notifications via separate service (decoupled via Redis queue)
-      const notifQueue = new Queue('notifications', { connection })
-      await Promise.allSettled([
-        newListings.length && notifQueue.add('new_listings', { type: 'new_listings', listings: newListings }),
-        updatedListings.length && notifQueue.add('price_drops', { type: 'price_drops', listings: updatedListings }),
-      ])
+      console.log(`[scraper] job #${job.id} done — new: ${newListings.length}, updated: ${updatedListings.length}`)
 
-      return { scraped: listings.length, saved: deduped.length, new: newListings.length }
+      try {
+        const notifQueue = new Queue('notifications', { connection })
+        await Promise.allSettled([
+          newListings.length && notifQueue.add('new_listings', { type: 'new_listings', listings: newListings }),
+          updatedListings.length && notifQueue.add('price_drops', { type: 'price_drops', listings: updatedListings }),
+        ])
+        await notifQueue.close()
+      } catch { /* notifications are non-critical */ }
+
+      return { scraped: listings.length, saved: deduped.length, new: newListings.length, updated: updatedListings.length }
     },
-    { connection, concurrency: 3 }
+    { connection, concurrency: 1 } // 1 job at a time to avoid OOM with Playwright
   )
 
   worker.on('completed', (job) => {
     const r = job.returnvalue
-    console.log(`✓ scrape #${job.id} — scraped ${r?.scraped}, saved ${r?.saved}, new ${r?.new}`)
+    console.log(`✓ scrape #${job.id} — raw:${r?.scraped} deduped:${r?.saved} new:${r?.new} updated:${r?.updated}`)
   })
   worker.on('failed', (job, err) => console.error(`✗ scrape job ${job?.id} failed:`, err.message))
 
@@ -121,9 +142,18 @@ export function startWorker() {
 }
 
 export async function startCron() {
+  // Run a scrape immediately on startup so we get data right away
+  await scrapeQueue.add('startup-scrape', {}, {
+    attempts: 2,
+    jobId: 'startup',          // deduped by jobId — won't re-queue if already pending
+    removeOnComplete: true,
+  })
+  console.log('[scraper] startup scrape job queued')
+
+  // Recurring scrape every 2 hours
   await scrapeQueue.add('cron-scrape', {}, {
     repeat: { pattern: '0 */2 * * *' },
     attempts: 2,
   })
-  console.log('Scrape cron scheduled every 2 hours')
+  console.log('[scraper] cron scheduled — every 2 hours')
 }

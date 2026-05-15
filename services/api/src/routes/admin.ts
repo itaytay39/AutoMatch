@@ -73,6 +73,20 @@ const admin: FastifyPluginAsync = async (app) => {
     const { count } = await app.prisma.listing.deleteMany()
     return { deleted: count }
   })
+
+  // Delete only mock/seed listings (externalId not a real numeric ID)
+  app.delete('/admin/listings/mock', async (req, reply) => {
+    const { confirm } = (req.query as any)
+    if (confirm !== 'yes') return reply.code(400).send({ error: 'add ?confirm=yes' })
+    // Mock listings have externalId like "stonic-4", "corona-1" etc (non-numeric)
+    const all = await app.prisma.listing.findMany({ select: { id: true, externalId: true } })
+    const mockIds = all
+      .filter(l => !/^\d+$/.test(l.externalId))
+      .map(l => l.id)
+    if (mockIds.length === 0) return { deleted: 0, message: 'no mock listings found' }
+    const { count } = await app.prisma.listing.deleteMany({ where: { id: { in: mockIds } } })
+    return { deleted: count }
+  })
 }
 
 export default admin
