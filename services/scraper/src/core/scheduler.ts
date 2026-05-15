@@ -21,14 +21,22 @@ export function startWorker() {
     'scrape',
     async (job: Job<SearchCriteria>) => {
       const criteria = job.data
-      const allResults = await Promise.allSettled(
-        ALL_CONNECTORS.map(c => c.search(criteria).catch(err => {
-          console.error(`[${c.name}] error:`, err.message)
-          return [] as Listing[]
-        }))
+      const perConnector = await Promise.allSettled(
+        ALL_CONNECTORS.map(async c => {
+          const start = Date.now()
+          try {
+            const results = await c.search(criteria)
+            const ms = Date.now() - start
+            console.log(`[${c.name}] ✓ ${results.length} listings (${ms}ms)`)
+            return results
+          } catch (err: any) {
+            console.error(`[${c.name}] ✗ ${err.message}`)
+            return [] as Listing[]
+          }
+        })
       )
 
-      const listings = allResults.flatMap(r => r.status === 'fulfilled' ? r.value : [])
+      const listings = perConnector.flatMap(r => r.status === 'fulfilled' ? r.value : [])
       const deduped = deduplicateListings(listings)
 
       const newListings: typeof deduped = []
