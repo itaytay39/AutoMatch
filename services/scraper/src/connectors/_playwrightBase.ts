@@ -70,7 +70,7 @@ export function makePlaywrightConnector(opts: PlaywrightConnectorOpts): CarConne
             price,
             city:       normalizeCity(item.city),
             images:     item.img ? [item.img] : [],
-            description: item.description ?? null,
+            description: item.description ?? undefined,
           })
         }
       } catch (err: any) {
