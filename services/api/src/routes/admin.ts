@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
+import { Queue } from 'bullmq'
 
 const SCRAPER_QUEUE_URL = process.env.SCRAPER_QUEUE_URL // optional: HTTP endpoint of scraper
 const ADMIN_SECRET      = process.env.ADMIN_SECRET ?? 'automatch-dev'
@@ -29,7 +30,6 @@ const admin: FastifyPluginAsync = async (app) => {
 
     // Enqueue via Redis (BullMQ) — same queue the scraper worker listens to
     try {
-      const { Queue } = await import('bullmq')
       const connection = {
         host: process.env.REDIS_HOST ?? 'localhost',
         port: Number(process.env.REDIS_PORT ?? 6379),
