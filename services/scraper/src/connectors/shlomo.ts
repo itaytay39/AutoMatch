@@ -40,7 +40,7 @@ export const shlomoConnector = makePlaywrightConnector({
         }))
       }
     }
-    return page.5342eval(
+    return page.$eval(
       '[class*="car-card"], [class*="CarCard"], [class*="vehicle-card"], [class*="VehicleCard"], [class*="listing-item"], [class*="item-card"]',
       (els) => els.slice(0, 40).map(el => {
         const a   = el.querySelector('a') as HTMLAnchorElement | null

@@ -60,7 +60,7 @@ async function scrapeViaAPI(criteria: SearchCriteria): Promise<Listing[]> {
         city:        normalizeCity(item.city ?? item.area_name ?? ''),
         region:      item.area_name ?? undefined,
         images:      imgs,
-        description: item.info_text ?? null,
+        description: item.info_text ?? undefined,
         hand:        item.Hand ? parseInt(String(item.Hand), 10) || undefined : undefined,
         trim:        item.TrimLevel ?? item.trim_level ?? undefined,
         engine:      item.EngineCapacity ? `${item.EngineCapacity}cc` : undefined,
@@ -119,7 +119,7 @@ async function scrapeViaPlaywright(criteria: SearchCriteria): Promise<Listing[]>
         price:       normalizePrice(item.price),
         city:        normalizeCity(item.city),
         images:      item.img ? [item.img] : [],
-        description: null,
+        description: undefined,
       })
     }
   } finally {
