@@ -28,16 +28,24 @@ const admin: FastifyPluginAsync = async (app) => {
   app.post('/admin/scrape', async (req, reply) => {
     const body = ScrapeBodySchema.parse(req.body ?? {})
 
-    // Enqueue via Redis (BullMQ) — same queue the scraper worker listens to
     try {
-      const connection = {
-        host: process.env.REDIS_HOST ?? 'localhost',
-        port: Number(process.env.REDIS_PORT ?? 6379),
-      }
-      const scrapeQueue = new Queue('scrape', { connection })
-      const job = await scrapeQueue.add('manual-scrape', body, { attempts: 2 })
+      const redisUrl = process.env.REDIS_URL
+      const connection = redisUrl
+        ? { url: redisUrl }
+        : {
+            host: process.env.REDIS_HOST ?? 'localhost',
+            port: Number(process.env.REDIS_PORT ?? 6379),
+            connectTimeout: 5000,
+            maxRetriesPerRequest: 0,
+            enableOfflineQueue: false,
+          }
+      const scrapeQueue = new Queue('scrape', { connection: connection as any })
+      const job = await Promise.race([
+        scrapeQueue.add('manual-scrape', body, { attempts: 2 }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Redis timeout')), 6000)),
+      ])
       await scrapeQueue.close()
-      return { queued: true, jobId: job.id, criteria: body }
+      return { queued: true, jobId: (job as any).id, criteria: body }
     } catch (err: any) {
       app.log.error('Failed to enqueue scrape job:', err.message)
       return reply.code(503).send({ error: 'queue_unavailable', detail: err.message })
