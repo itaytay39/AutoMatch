@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useRef } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Image, Dimensions, Animated } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
+import React from 'react'
+import {
+  View, Text, TouchableOpacity, Image, StyleSheet,
+} from 'react-native'
 import Svg, { Polyline } from 'react-native-svg'
-import { colors, radii, spacing, fontSize, shadows } from '../theme/tokens'
+import { Ionicons } from '@expo/vector-icons'
+import { colors, radii, shadows } from '../theme/tokens'
 import { fonts } from '../theme/typography'
-import { toggleSaved, useSaved } from '../store/savedStore'
 
 export interface ListingCardData {
   id: string
@@ -16,363 +17,450 @@ export interface ListingCardData {
   city?: string
   source: string
   imageUrl?: string
-  trim?: string
-  hand?: number
   priceLabel?: 'good' | 'fair' | 'expensive'
   daysOnLot?: number
   odometerSuspicious?: boolean
   redFlags?: string[]
-  dealScore?: 'great' | 'good' | 'fair' | 'suspicious'
+  dealScore?: string
   priceDelta?: number
-  priceHistory?: number[]
+  deltaPct?: number
+  trim?: string
+  hand?: number
 }
 
 interface Props {
   listing: ListingCardData
-  onPress?: () => void
-  index?: number
+  onPress: () => void
+  onSave?: () => void
+  saved?: boolean
+  compact?: boolean
 }
 
-const SOURCE_DOT: Record<string, string> = {
-  yad2:     '#FF6B35',
-  homeless: '#6B35FF',
-  autoboom: '#35B0FF',
-  carwiz:   '#35FF8A',
+// Source dot colors
+const SOURCE_COLORS: Record<string, string> = {
+  yad2:          '#F5A623',
+  autoboom:      '#FF7A45',
+  colmobil:      '#3450E8',
+  autocenter:    '#34D399',
+  homeless:      '#8E7BB1',
+  focusnet:      '#D69538',
+  carwiz:        '#3F8C68',
+  hertz:         '#D4A800',
+  avis:          '#CC0000',
+  eldan:         '#003DA5',
+  albar:         '#E63946',
+  shlomo:        '#FF6600',
+  freesbe:       '#00B4D8',
+  winwin:        '#7C3AED',
+  trademobile:   '#2563EB',
+  icar:          '#0EA5E9',
+  toyota_select: '#EB0A1E',
+  default:       '#A39A8E',
 }
 
-const DEAL_CONFIG: Record<string, { color: string; bg: string; label: string }> = {
-  great:      { color: colors.success,  bg: colors.successSoft, label: 'עסקה מצוינת' },
-  good:       { color: colors.success,  bg: colors.successSoft, label: 'עסקה טובה' },
-  fair:       { color: colors.warning,  bg: colors.warningSoft, label: 'מחיר שוק' },
-  expensive:  { color: colors.danger,   bg: colors.dangerSoft,  label: 'יקר יחסית' },
-  suspicious: { color: colors.warning,  bg: colors.warningSoft, label: 'חשוד' },
+const SOURCE_NAMES: Record<string, string> = {
+  yad2:          'יד2',
+  autoboom:      'אוטובום',
+  colmobil:      'קולמוביל',
+  autocenter:    'אוטוסנטר',
+  homeless:      'הומלס',
+  focusnet:      'פוקוסנט',
+  carwiz:        'קארוויז',
+  hertz:         'הרץ',
+  avis:          'אביס',
+  eldan:         'אלדן',
+  albar:         'אלבר',
+  shlomo:        'שלמה',
+  freesbe:       'פריסבי',
+  winwin:        'וינוין',
+  trademobile:   'טרייד',
+  icar:          'iCar',
+  toyota_select: 'טויוטה סלקט',
 }
 
-const { width: SW } = Dimensions.get('window')
+const PRICE_BADGE: Record<string, { label: string; bg: string; fg: string }> = {
+  good:      { label: 'מחיר טוב',  bg: '#DCEBE0', fg: '#1F5A3D' },
+  fair:      { label: 'מחיר סביר', bg: '#F6E2C4', fg: '#7A4A0D' },
+  expensive: { label: 'יקר',       bg: '#FFE2D6', fg: '#9A2A14' },
+}
 
-function Sparkline({ values, width = 64, height = 22 }: { values: number[]; width?: number; height?: number }) {
-  if (!values || values.length < 2) return null
-  const min = Math.min(...values)
-  const max = Math.max(...values)
-  const range = max - min || 1
-  const stepX = width / (values.length - 1)
-  const pts = values
-    .map((v, i) => `${i * stepX},${height - ((v - min) / range) * (height - 2) - 1}`)
-    .join(' ')
-  const trendDown = values[values.length - 1] <= values[0]
-  const lineColor = trendDown ? colors.success : colors.danger
+const fmtPrice = (n: number) => `₪${n.toLocaleString('en-US')}`
+const fmtKm    = (n: number) => `${n.toLocaleString('en-US')} ק״מ`
+
+// Simple sparkline using Polyline — 3-segment path representing a trend
+// Points layout: flat → dip/rise based on priceLabel
+function Sparkline({ priceLabel }: { priceLabel?: string }) {
+  const isGood = priceLabel === 'good'
+  const isBad  = priceLabel === 'expensive'
+
+  const lineColor = isGood ? '#1F5A3D' : isBad ? '#9A2A14' : '#A39A8E'
+
+  // Points: x goes 0→50, y goes 18→top/bottom depending on trend
+  // good: trending down (price dropped → good deal)
+  // expensive: trending up
+  // fair/default: flat with slight wave
+  let points: string
+  if (isGood) {
+    points = '0,14 12,12 25,9 38,6 50,4'
+  } else if (isBad) {
+    points = '0,4 12,6 25,9 38,12 50,14'
+  } else {
+    points = '0,9 10,7 22,10 34,8 50,9'
+  }
+
   return (
-    <Svg width={width} height={height}>
+    <Svg width={50} height={18}>
       <Polyline
-        points={pts}
+        points={points}
         fill="none"
         stroke={lineColor}
-        strokeWidth={1.5}
-        strokeLinejoin="round"
+        strokeWidth={1.8}
         strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity={0.8}
       />
     </Svg>
   )
 }
 
-export function ListingCard({ listing, onPress, index = 0 }: Props) {
-  const saved = useSaved()
-  const isSaved = saved.has(listing.id)
-
-  const fadeAnim  = useRef(new Animated.Value(0)).current
-  const slideAnim = useRef(new Animated.Value(16)).current
-  const heartScale = useRef(new Animated.Value(1)).current
-
-  useEffect(() => {
-    const delay = Math.min(index * 55, 330)
-    Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 300, delay, useNativeDriver: true }),
-      Animated.spring(slideAnim, { toValue: 0, delay, useNativeDriver: true, tension: 80, friction: 12 }),
-    ]).start()
-  }, [])
-
-  const handleSave = useCallback((e: any) => {
-    e?.stopPropagation?.()
-    toggleSaved(listing.id)
-    Animated.sequence([
-      Animated.spring(heartScale, { toValue: 1.45, useNativeDriver: true, tension: 300, friction: 7 }),
-      Animated.spring(heartScale, { toValue: 1,    useNativeDriver: true, tension: 200, friction: 10 }),
-    ]).start()
-  }, [listing.id])
-
-  const deal = DEAL_CONFIG[listing.dealScore ?? 'fair']
-  const price = listing.price.toLocaleString('he-IL')
-  const sourceDotColor = SOURCE_DOT[listing.source] ?? colors.fg4
-  const priceDeltaAbs = listing.priceDelta && listing.priceDelta < 0
-    ? Math.abs(listing.priceDelta).toLocaleString('he-IL')
-    : null
-  const metaParts = [
-    listing.year?.toString(),
-    listing.mileage ? `${listing.mileage.toLocaleString('he-IL')} ק״מ` : null,
-    listing.city,
-  ].filter(Boolean)
-
-  const hasTrend = listing.priceHistory && listing.priceHistory.length >= 2
-  const trendDown = hasTrend
-    ? listing.priceHistory![listing.priceHistory!.length - 1] <= listing.priceHistory![0]
-    : true
-  const trendPct = hasTrend
-    ? Math.round(
-        ((listing.priceHistory![listing.priceHistory!.length - 1] - listing.priceHistory![0]) /
-          listing.priceHistory![0]) * 100
-      )
-    : null
+export function ListingCard({ listing: v, onPress, onSave, saved = false, compact = false }: Props) {
+  const sourceColor = SOURCE_COLORS[v.source] ?? SOURCE_COLORS.default
+  const sourceName  = SOURCE_NAMES[v.source] ?? v.source
+  const badge       = v.priceLabel ? PRICE_BADGE[v.priceLabel] : null
+  const priceDrop   = v.priceDelta != null && v.priceDelta < 0
+  const isNew       = v.daysOnLot != null && v.daysOnLot <= 1
+  const imgHeight   = compact ? 168 : 192
 
   return (
-    <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-    <TouchableOpacity style={s.card} onPress={onPress} activeOpacity={0.93}>
-
-      <View style={s.imageArea}>
-        <View style={s.imageInner}>
-          {listing.imageUrl ? (
-            <Image
-              source={{ uri: listing.imageUrl }}
-              style={StyleSheet.absoluteFillObject}
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={s.imgFallback}>
-              <Ionicons name="car-sport-outline" size={44} color={colors.fg4} />
-            </View>
-          )}
-
-          <TouchableOpacity
-            style={[s.heartBtn, isSaved && s.heartBtnSaved]}
-            onPress={handleSave}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Animated.View style={{ transform: [{ scale: heartScale }] }}>
-              <Ionicons
-                name={isSaved ? 'heart' : 'heart-outline'}
-                size={15}
-                color={isSaved ? colors.danger : colors.fg2}
-              />
-            </Animated.View>
-          </TouchableOpacity>
-
-          <View style={s.sourceBadge}>
-            <View style={[s.sourceDot, { backgroundColor: sourceDotColor }]} />
-            <Text style={s.sourceBadgeText}>{listing.source}</Text>
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.88}
+      style={styles.card}
+    >
+      {/* ── Image section ── */}
+      <View style={[styles.imgWrap, { height: imgHeight }]}>
+        {v.imageUrl ? (
+          <Image source={{ uri: v.imageUrl }} style={styles.img} resizeMode="cover" />
+        ) : (
+          <View style={[styles.img, styles.imgPlaceholder]}>
+            <Ionicons name="car-sport-outline" size={44} color={colors.fg4} />
           </View>
-        </View>
+        )}
+
+        {/* "חדש היום" chip — top-left */}
+        {isNew && (
+          <View style={styles.newChip}>
+            <View style={styles.newChipDot} />
+            <Text style={styles.newChipText}>חדש היום</Text>
+          </View>
+        )}
+
+        {/* Heart button — top-right */}
+        <TouchableOpacity
+          onPress={onSave}
+          style={styles.heartBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons
+            name={saved ? 'heart' : 'heart-outline'}
+            size={16}
+            color={saved ? '#3450E8' : '#6D665C'}
+          />
+        </TouchableOpacity>
       </View>
 
-      <View style={s.content}>
-        <View style={s.titleRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.carName} numberOfLines={1}>
-              {listing.make} {listing.model}
-            </Text>
-            {(listing.trim || listing.hand) && (
-              <Text style={s.trimHand}>
-                {[listing.trim, listing.hand ? `יד ${listing.hand}` : null]
-                  .filter(Boolean).join(' · ')}
+      {/* ── Body ── */}
+      <View style={styles.body}>
+
+        {/* Meta line: source dot + source name + separator + city + badge */}
+        <View style={styles.metaRow}>
+          <View style={[styles.sourceDot, { backgroundColor: sourceColor }]} />
+          <Text style={styles.sourceName}>{sourceName}</Text>
+          <View style={styles.metaSep} />
+          {v.city ? <Text style={styles.cityText}>{v.city}</Text> : null}
+          <View style={styles.metaSpacer} />
+          {badge && (
+            <View style={[styles.badgeTag, { backgroundColor: badge.bg }]}>
+              <Text style={[styles.badgeTagText, { color: badge.fg }]}>{badge.label}</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Title */}
+        <Text style={styles.title} numberOfLines={1}>
+          {v.make} {v.model}{v.trim ? ` ${v.trim}` : ''}
+        </Text>
+
+        {/* Spec strip: year · km · hand */}
+        <View style={styles.specStrip}>
+          <Ionicons name="calendar-outline" size={11} color={colors.fg3} />
+          <Text style={styles.specText} suppressHighlighting>{v.year}</Text>
+
+          <View style={styles.specSep} />
+
+          {v.mileage != null && (
+            <>
+              <Ionicons name="speedometer-outline" size={11} color={colors.fg3} />
+              <Text style={styles.specText} suppressHighlighting>{fmtKm(v.mileage)}</Text>
+              <View style={styles.specSep} />
+            </>
+          )}
+
+          {v.hand != null && (
+            <>
+              <Ionicons name="person-outline" size={11} color={colors.fg3} />
+              <Text style={styles.specText} suppressHighlighting>יד {v.hand}</Text>
+            </>
+          )}
+        </View>
+
+        {/* Odometer warning */}
+        {v.odometerSuspicious && (
+          <View style={styles.warningRow}>
+            <Ionicons name="warning-outline" size={12} color="#7A4A0D" />
+            <Text style={styles.warningText}>קילומטראז' חשוד</Text>
+          </View>
+        )}
+
+        {/* Price row */}
+        <View style={styles.priceRow}>
+          {/* Left: sparkline + delta% */}
+          <View style={styles.priceLeft}>
+            <Sparkline priceLabel={v.priceLabel} />
+            {v.deltaPct != null && (
+              <Text style={[
+                styles.deltaPct,
+                { color: v.deltaPct < 0 ? '#1F5A3D' : v.deltaPct > 0 ? '#9A2A14' : '#A39A8E' },
+              ]}>
+                {v.deltaPct > 0 ? '+' : ''}{v.deltaPct}%
               </Text>
             )}
           </View>
-          {listing.dealScore && (
-            <View style={[s.dealBadge, { backgroundColor: deal.bg }]}>
-              <Text style={[s.dealBadgeText, { color: deal.color }]}>{deal.label}</Text>
-            </View>
-          )}
-        </View>
 
-        <View style={s.priceRow}>
-          <Text style={s.bigPrice}>₪{price}</Text>
-          {priceDeltaAbs && (
-            <View style={s.priceDrop}>
-              <Text style={s.priceDropText}>↓ ₪{priceDeltaAbs}</Text>
-            </View>
-          )}
-        </View>
-
-        {metaParts.length > 0 && (
-          <Text style={s.specLine} numberOfLines={1}>
-            {metaParts.join(' · ')}
-          </Text>
-        )}
-
-        <View style={s.footer}>
-          <View style={s.footerLeft}>
-            {hasTrend && (
-              <>
-                <Sparkline values={listing.priceHistory!} width={64} height={22} />
-                <Text style={s.trendLabel}>מגמת מחיר · 30 ימים</Text>
-              </>
+          {/* Right: price drop chip + price */}
+          <View style={styles.priceRight}>
+            {priceDrop && (
+              <View style={styles.priceDropChip}>
+                <Text style={styles.priceDropText}>↓ {fmtPrice(Math.abs(v.priceDelta!))}</Text>
+              </View>
             )}
+            <Text style={styles.price}>{fmtPrice(v.price)}</Text>
           </View>
-          {trendPct !== null && (
-            <Text style={[s.trendPct, { color: trendDown ? colors.success : colors.danger }]}>
-              {trendDown ? '' : '+'}{trendPct}%
-            </Text>
-          )}
         </View>
-      </View>
 
+      </View>
     </TouchableOpacity>
-    </Animated.View>
   )
 }
 
-const s = StyleSheet.create({
+const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.bg1,
-    borderRadius: radii.xxl,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#ECE4D8',
     overflow: 'hidden',
-    marginBottom: spacing[3],
     ...shadows.sm,
   },
 
-  imageArea: {
-    padding: 8,
-  },
-  imageInner: {
-    height: 176,
-    borderRadius: 18,
+  // ── Image ──
+  imgWrap: {
+    position: 'relative',
+    width: '100%',
     overflow: 'hidden',
-    backgroundColor: colors.bg2,
   },
-  imgFallback: {
-    ...StyleSheet.absoluteFillObject,
+  img: {
+    width: '100%',
+    height: '100%',
+  },
+  imgPlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.bg2,
+    backgroundColor: '#F1ECE4',
   },
 
-  heartBtn: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.sm,
-  },
-  heartBtnSaved: {
-    backgroundColor: colors.dangerSoft,
-  },
-
-  sourceBadge: {
+  // "חדש היום" chip — top-left
+  newChip: {
     position: 'absolute',
     top: 10,
     left: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(255,255,255,0.90)',
-    borderRadius: radii.pill,
-    paddingHorizontal: 9,
+    backgroundColor: '#3450E8',
+    borderRadius: 6,
+    paddingHorizontal: 8,
     paddingVertical: 4,
+  },
+  newChipDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#FFFFFF',
+  },
+  newChipText: {
+    fontSize: 10.5,
+    color: '#FFFFFF',
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
+
+  // Heart button — top-right
+  heartBtn: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(255,255,255,0.94)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // ── Body ──
+  body: {
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 14,
+  },
+
+  // Meta line
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginBottom: 6,
   },
   sourceDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
-  sourceBadgeText: {
-    fontSize: fontSize.caption - 1,
-    color: colors.fg2,
-    fontFamily: fonts.medium,
-  },
-
-  content: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 18,
-  },
-
-  titleRow: {
-    flexDirection: 'row-reverse',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  carName: {
-    fontSize: 17,
-    color: colors.fg1,
-    fontFamily: fonts.bold,
-    textAlign: 'right',
-  },
-  trimHand: {
-    fontSize: fontSize.caption,
+  sourceName: {
+    fontSize: 11,
     color: colors.fg3,
-    fontFamily: fonts.regular,
-    textAlign: 'right',
-    marginTop: 2,
-  },
-
-  dealBadge: {
-    borderRadius: radii.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    marginStart: 10,
-    marginTop: 2,
-  },
-  dealBadgeText: {
-    fontSize: fontSize.caption,
     fontFamily: fonts.semibold,
+    fontWeight: '600',
   },
-
-  priceRow: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
+  metaSep: {
+    width: 2,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: colors.fg4,
   },
-  bigPrice: {
-    fontSize: 22,
-    color: colors.fg1,
-    fontFamily: fonts.bold,
-    letterSpacing: -0.5,
-  },
-  priceDrop: {
-    backgroundColor: colors.successSoft,
-    borderRadius: radii.pill,
-    paddingHorizontal: 9,
-    paddingVertical: 3,
-  },
-  priceDropText: {
-    fontSize: fontSize.caption,
-    color: colors.success,
-    fontFamily: fonts.semibold,
-  },
-
-  specLine: {
-    fontSize: fontSize.caption,
-    color: colors.fg2,
-    fontFamily: fonts.regular,
-    textAlign: 'right',
-    marginBottom: 10,
-  },
-
-  footer: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: colors.border1,
-  },
-  footerLeft: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    gap: 6,
-  },
-  trendLabel: {
+  cityText: {
     fontSize: 11,
     color: colors.fg3,
     fontFamily: fonts.regular,
+    fontWeight: '400',
   },
-  trendPct: {
-    fontSize: fontSize.caption,
+  metaSpacer: {
+    flex: 1,
+  },
+  badgeTag: {
+    borderRadius: radii.sm,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  badgeTagText: {
+    fontSize: 10.5,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+  },
+
+  // Title
+  title: {
+    fontSize: 16.5,
+    fontWeight: '700',
+    color: colors.fg1,
     fontFamily: fonts.bold,
+    letterSpacing: -0.25,
+    marginBottom: 0,
+  },
+
+  // Spec strip
+  specStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 8,
+  },
+  specText: {
+    fontSize: 12,
+    color: colors.fg2,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
+    writingDirection: 'ltr',
+  },
+  specSep: {
+    width: 1,
+    height: 10,
+    backgroundColor: '#DDD3C3',
+    marginHorizontal: 2,
+  },
+
+  // Odometer warning
+  warningRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+  },
+  warningText: {
+    fontSize: 11,
+    color: '#7A4A0D',
+    fontFamily: fonts.medium,
+    fontWeight: '500',
+  },
+
+  // Price row
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#ECE4D8',
+  },
+  priceLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  deltaPct: {
+    fontSize: 11.5,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    writingDirection: 'ltr',
+  },
+  priceRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  priceDropChip: {
+    backgroundColor: '#DCEBE0',
+    borderRadius: radii.xs,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  priceDropText: {
+    fontSize: 11,
+    color: '#1F5A3D',
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    writingDirection: 'ltr',
+  },
+  price: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: colors.fg1,
+    fontFamily: fonts.bold,
+    letterSpacing: -0.4,
+    writingDirection: 'ltr',
   },
 })

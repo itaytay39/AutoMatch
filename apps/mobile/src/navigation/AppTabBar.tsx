@@ -3,134 +3,118 @@ import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs'
-import { colors, shadows } from '../theme/tokens'
+import { colors } from '../theme/tokens'
 import { fonts } from '../theme/typography'
 import { useSaved } from '../store/savedStore'
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name']
 
-const TAB_ICONS: Record<string, { icon: IoniconName; iconActive: IoniconName }> = {
-  'ראשי':    { icon: 'home-outline',          iconActive: 'home' },
-  'חיפוש':   { icon: 'search-outline',        iconActive: 'search' },
-  'שמורים':  { icon: 'bookmark-outline',      iconActive: 'bookmark' },
-  'התראות':  { icon: 'notifications-outline', iconActive: 'notifications' },
-}
+const TABS: { name: string; icon: IoniconName; iconActive: IoniconName }[] = [
+  { name: 'התראות', icon: 'notifications-outline', iconActive: 'notifications' },
+  { name: 'שמורים', icon: 'bookmark-outline',       iconActive: 'bookmark'      },
+  { name: 'חיפוש',  icon: 'search-outline',         iconActive: 'search'        },
+  { name: 'ראשי',   icon: 'home-outline',            iconActive: 'home'          },
+]
 
 export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
-  const insets = useSafeAreaInsets()
-  const savedIds = useSaved()
-  const savedCount = savedIds.length
-  const scaleAnims = useRef<Map<string, Animated.Value>>(new Map()).current
+  const insets      = useSafeAreaInsets()
+  const savedIds    = useSaved()
+  const savedCount  = savedIds.length
+  const scaleAnims  = useRef<Map<string, Animated.Value>>(new Map()).current
 
   return (
-    <View style={[s.wrap, { paddingBottom: Math.max(insets.bottom, 8) }]}>
-      <View style={s.pill}>
-        {state.routes.map((route, i) => {
-          const { options } = descriptors[route.key]
-          const label = options.tabBarLabel as string ?? route.name
-          const isFocused = state.index === i
-          const icons = TAB_ICONS[route.name] ?? { icon: 'ellipse-outline', iconActive: 'ellipse' }
+    <View style={[s.wrap, { paddingBottom: Math.max(insets.bottom, 6) }]}>
+      {state.routes.map((route, i) => {
+        const isFocused  = state.index === i
+        const tab        = TABS.find(t => t.name === route.name) ?? TABS[TABS.length - 1]
+        const showBadge  = route.name === 'שמורים' && savedCount > 0
 
-          if (!scaleAnims.has(route.key)) {
-            scaleAnims.set(route.key, new Animated.Value(1))
-          }
-          const scaleAnim = scaleAnims.get(route.key)!
+        if (!scaleAnims.has(route.key)) {
+          scaleAnims.set(route.key, new Animated.Value(1))
+        }
+        const scaleAnim = scaleAnims.get(route.key)!
 
-          const onPress = () => {
-            Animated.sequence([
-              Animated.spring(scaleAnim, { toValue: 0.84, useNativeDriver: true, tension: 300, friction: 7 }),
-              Animated.spring(scaleAnim, { toValue: 1,    useNativeDriver: true, tension: 200, friction: 9 }),
-            ]).start()
-            const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true })
-            if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name)
-          }
+        const onPress = () => {
+          Animated.sequence([
+            Animated.spring(scaleAnim, { toValue: 0.88, useNativeDriver: true, tension: 300, friction: 7 }),
+            Animated.spring(scaleAnim, { toValue: 1,    useNativeDriver: true, tension: 200, friction: 9 }),
+          ]).start()
+          const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true })
+          if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name)
+        }
 
-          const showBadge = route.name === 'שמורים' && savedCount > 0
-
-          return (
-            <TouchableOpacity
-              key={route.key}
-              onPress={onPress}
-              activeOpacity={1}
-              style={[s.tab, isFocused && s.tabActive]}
-              accessibilityRole="button"
-              accessibilityState={isFocused ? { selected: true } : {}}
-            >
-              <Animated.View style={[s.tabInner, { transform: [{ scale: scaleAnim }] }]}>
-              <View>
+        return (
+          <TouchableOpacity
+            key={route.key}
+            onPress={onPress}
+            activeOpacity={0.7}
+            style={s.tab}
+          >
+            <Animated.View style={[s.inner, { transform: [{ scale: scaleAnim }] }]}>
+              <View style={s.iconWrap}>
                 <Ionicons
-                  name={isFocused ? icons.iconActive : icons.icon}
-                  size={20}
-                  color={isFocused ? colors.onAccent : colors.fg3}
-                  style={isFocused ? undefined : { opacity: 0.9 }}
+                  name={isFocused ? tab.iconActive : tab.icon}
+                  size={22}
+                  color={isFocused ? colors.accent : colors.fg3}
                 />
-                {showBadge && !isFocused && (
+                {showBadge && (
                   <View style={s.badge}>
                     <Text style={s.badgeText}>{savedCount > 99 ? '99+' : String(savedCount)}</Text>
                   </View>
                 )}
               </View>
-              {isFocused && (
-                <Text style={s.tabLabel}>{label}</Text>
-              )}
-              </Animated.View>
-            </TouchableOpacity>
-          )
-        })}
-      </View>
+              <Text style={[s.label, isFocused && s.labelActive]}>{route.name}</Text>
+            </Animated.View>
+          </TouchableOpacity>
+        )
+      })}
     </View>
   )
 }
 
 const s = StyleSheet.create({
   wrap: {
-    paddingHorizontal: 14,
-    paddingTop: 8,
-    backgroundColor: 'transparent',
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-  },
-  pill: {
-    backgroundColor: colors.bg1,
-    borderRadius: 32,
-    padding: 8,
     flexDirection: 'row',
     justifyContent: 'space-around',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border1,
-    ...shadows.md,
+    alignItems: 'flex-start',
+    paddingTop: 8,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderTopWidth: 1,
+    borderTopColor: '#ECE4D8',
   },
   tab: {
-    borderRadius: 24,
-    minWidth: 44,
+    flex: 1,
+    alignItems: 'center',
     justifyContent: 'center',
+  },
+  inner: {
     alignItems: 'center',
+    gap: 3,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    position: 'relative',
   },
-  tabInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+  iconWrap: { position: 'relative' },
+  label: {
+    fontSize: 10.5,
+    fontFamily: fonts.medium,
+    color: colors.fg3,
+    fontWeight: '500',
   },
-  tabActive: {
-    backgroundColor: colors.accent,
-    paddingHorizontal: 18,
-  },
-  tabLabel: {
-    color: colors.onAccent,
-    fontFamily: fonts.semibold,
-    fontSize: 13,
-    letterSpacing: -0.1,
+  labelActive: {
+    color: colors.accent,
+    fontFamily: fonts.bold,
+    fontWeight: '700',
   },
   badge: {
     position: 'absolute',
-    top: -5,
-    right: -7,
-    backgroundColor: colors.danger,
+    top: -4,
+    right: -8,
+    backgroundColor: colors.accent,
     borderRadius: 8,
     minWidth: 16,
     height: 16,
@@ -138,7 +122,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 3,
     borderWidth: 1.5,
-    borderColor: colors.bg1,
+    borderColor: '#FFFFFF',
   },
   badgeText: {
     color: '#FFFFFF',
