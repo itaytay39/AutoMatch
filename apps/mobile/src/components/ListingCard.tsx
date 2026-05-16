@@ -2,6 +2,7 @@ import React from 'react'
 import {
   View, Text, TouchableOpacity, Image, StyleSheet,
 } from 'react-native'
+import Svg, { Path } from 'react-native-svg'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, spacing, radii, shadows, fontSize } from '../theme/tokens'
 import { fonts } from '../theme/typography'
@@ -35,34 +36,45 @@ interface Props {
   compact?: boolean
 }
 
+// Brand colors — used as text color on white pill background
 const SOURCE_COLORS: Record<string, string> = {
-  yad2:       '#F5C842',
-  autoboom:   '#FF7A45',
-  colmobil:   '#5BC0EB',
-  autocenter: '#34D399',
-  homeless:   '#8E7BB1',
-  focusnet:   '#D69538',
-  carwiz:     '#3F8C68',
-  default:    '#A39A8E',
+  yad2:          '#ED2024',
+  autoboom:      '#FF7A45',
+  colmobil:      '#0057B7',
+  autocenter:    '#10B981',
+  homeless:      '#8B5CF6',
+  focusnet:      '#D97706',
+  carwiz:        '#059669',
+  hertz:         '#FFD000',
+  avis:          '#CC0000',
+  eldan:         '#003DA5',
+  albar:         '#E63946',
+  shlomo:        '#FF6600',
+  freesbe:       '#00B4D8',
+  winwin:        '#7C3AED',
+  trademobile:   '#2563EB',
+  icar:          '#0EA5E9',
+  toyota_select: '#EB0A1E',
+  default:       '#5B88FF',
 }
 
 const SOURCE_NAMES: Record<string, string> = {
-  yad2:       'יד2',
-  autoboom:   'אוטובום',
-  colmobil:   'קולמוביל',
-  autocenter: 'אוטוסנטר',
-  homeless:   'הומלס',
-  focusnet:   'פוקוסנט',
-  carwiz:     'קארוויז',
-  hertz:      'הרץ',
-  avis:       'אביס',
-  eldan:      'אלדן',
-  albar:      'אלבר',
-  shlomo:     'שלמה',
-  freesbe:    'פריסבי',
-  winwin:     'וינוין',
-  trademobile:'טרייד',
-  icar:       'iCar',
+  yad2:          'יד2',
+  autoboom:      'אוטובום',
+  colmobil:      'קולמוביל',
+  autocenter:    'אוטוסנטר',
+  homeless:      'הומלס',
+  focusnet:      'פוקוסנט',
+  carwiz:        'קארוויז',
+  hertz:         'הרץ',
+  avis:          'אביס',
+  eldan:         'אלדן',
+  albar:         'אלבר',
+  shlomo:        'שלמה',
+  freesbe:       'פריסבי',
+  winwin:        'וינוין',
+  trademobile:   'טרייד',
+  icar:          'iCar',
   toyota_select: 'טויוטה סלקט',
 }
 
@@ -72,39 +84,71 @@ const PRICE_BADGE: Record<string, { label: string; bg: string; fg: string }> = {
   expensive: { label: 'יקר',       bg: colors.dangerSoft,  fg: colors.danger },
 }
 
+// Sparkline color per price label
+const SPARKLINE_COLOR: Record<string, string> = {
+  good:      colors.success,   // #22C55E
+  fair:      colors.warning,   // #F59E0B
+  expensive: colors.danger,    // #EF4444
+  default:   colors.accent,    // #5B88FF
+}
+
 const fmtPrice = (n: number) => `₪${n.toLocaleString('en-US')}`
 const fmtKm    = (n: number) => `${n.toLocaleString('en-US')} ק"מ`
+
+// A simple decorative sparkline SVG — path is a fixed gentle wave
+// Width is dynamic (passed as prop); height is fixed at 36
+function Sparkline({ color, width }: { color: string; width: number }) {
+  const w = width
+  const h = 36
+  // Control points for a smooth wave anchored at baseline (y=28) with a dip/rise
+  const d = `M0,${h * 0.78} C${w * 0.15},${h * 0.78} ${w * 0.2},${h * 0.28} ${w * 0.35},${h * 0.32} S${w * 0.55},${h * 0.70} ${w * 0.65},${h * 0.55} S${w * 0.85},${h * 0.18} ${w},${h * 0.22}`
+  return (
+    <Svg width={w} height={h} style={{ marginTop: 4 }}>
+      <Path
+        d={d}
+        stroke={color}
+        strokeWidth={1.8}
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity={0.7}
+      />
+    </Svg>
+  )
+}
 
 export function ListingCard({ listing: v, onPress, onSave, saved = false, compact = false }: Props) {
   const sourceColor = SOURCE_COLORS[v.source] ?? SOURCE_COLORS.default
   const sourceName  = SOURCE_NAMES[v.source] ?? v.source
   const badge       = v.priceLabel ? PRICE_BADGE[v.priceLabel] : null
-  const isNew       = v.daysOnLot !== undefined && v.daysOnLot <= 1
-  const priceDrop   = v.priceDelta && v.priceDelta < 0
+  const priceDrop   = v.priceDelta != null && v.priceDelta < 0
+  const sparkColor  = SPARKLINE_COLOR[v.priceLabel ?? 'default'] ?? SPARKLINE_COLOR.default
 
   return (
     <TouchableOpacity
       onPress={onPress}
-      activeOpacity={0.92}
+      activeOpacity={0.88}
       style={styles.card}
     >
-      {/* Image area */}
+      {/* ── Image area ── */}
       <View style={[styles.imgWrap, compact && styles.imgWrapCompact]}>
         {v.imageUrl ? (
           <Image source={{ uri: v.imageUrl }} style={styles.img} resizeMode="cover"/>
         ) : (
           <View style={[styles.img, styles.imgPlaceholder]}>
-            <Ionicons name="car-outline" size={40} color={colors.fg4}/>
+            <Ionicons name="car-sport-outline" size={44} color={colors.fg4}/>
           </View>
         )}
 
-        {/* Source tag — top start */}
-        <View style={styles.sourceTag}>
+        {/* Source badge — BOTTOM-LEFT, pill, white bg with brand-colored text */}
+        <View style={styles.sourceBadge}>
           <View style={[styles.sourceDot, { backgroundColor: sourceColor }]}/>
-          <Text style={styles.sourceText}>{sourceName}</Text>
+          <Text style={[styles.sourceBadgeText, { color: sourceColor }]}>
+            {sourceName}
+          </Text>
         </View>
 
-        {/* Heart — top end */}
+        {/* Heart button — TOP-RIGHT, dark circle */}
         <TouchableOpacity
           onPress={onSave}
           style={styles.heartBtn}
@@ -112,227 +156,246 @@ export function ListingCard({ listing: v, onPress, onSave, saved = false, compac
         >
           <Ionicons
             name={saved ? 'heart' : 'heart-outline'}
-            size={17}
-            color={saved ? colors.accent : colors.fg2}
+            size={16}
+            color={saved ? '#EF4444' : '#FFFFFF'}
           />
         </TouchableOpacity>
-
-        {/* New today chip — bottom start */}
-        {isNew && (
-          <View style={styles.newChip}>
-            <View style={styles.newDot}/>
-            <Text style={styles.newChipText}>{v.daysOnLot === 0 ? 'חדש היום' : 'אתמול'}</Text>
-          </View>
-        )}
       </View>
 
-      {/* Content */}
+      {/* ── Content ── */}
       <View style={styles.content}>
-        {/* Title row */}
-        <View style={styles.titleRow}>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={styles.title} numberOfLines={1}>
-              {v.make} {v.model}
-            </Text>
-            {(v.trim || v.hand) && (
-              <Text style={styles.subtitle}>
-                {[v.trim, v.hand != null ? `יד ${v.hand}` : null].filter(Boolean).join(' · ')}
+        {/* Title */}
+        <Text style={styles.title} numberOfLines={1}>
+          {v.make} {v.model}
+        </Text>
+
+        {/* Subtitle: year · hand · city */}
+        {(v.year || v.hand || v.city) && (
+          <Text style={styles.subtitle} numberOfLines={1}>
+            {[
+              v.year ? String(v.year) : null,
+              v.hand != null ? `יד ${v.hand}` : null,
+              v.city ?? null,
+            ].filter(Boolean).join(' · ')}
+          </Text>
+        )}
+
+        {/* Price row */}
+        <View style={styles.priceRow}>
+          <View style={styles.priceLeft}>
+            <Text style={styles.price}>{fmtPrice(v.price)}</Text>
+            {priceDrop && (
+              <Text style={styles.priceDrop}>
+                ↓ {fmtPrice(Math.abs(v.priceDelta!))}
               </Text>
             )}
           </View>
           {badge && (
-            <View style={[styles.badge, { backgroundColor: badge.bg }]}>
-              <Text style={[styles.badgeText, { color: badge.fg }]}>{badge.label}</Text>
+            <View style={[styles.pricePill, { backgroundColor: badge.bg }]}>
+              <Text style={[styles.pricePillText, { color: badge.fg }]}>{badge.label}</Text>
             </View>
           )}
         </View>
 
-        {/* Price row */}
-        <View style={styles.priceRow}>
-          <Text style={styles.price}>{fmtPrice(v.price)}</Text>
-          {priceDrop && (
-            <Text style={styles.priceDrop}>
-              ↓ {fmtPrice(Math.abs(v.priceDelta!))}
-            </Text>
-          )}
-        </View>
-
-        {/* Spec line */}
-        <View style={styles.specRow}>
-          <Text style={styles.specText}>{v.year}</Text>
-          <View style={styles.dot}/>
-          {v.mileage != null && (
-            <>
-              <Text style={styles.specText}>{fmtKm(v.mileage)}</Text>
-              <View style={styles.dot}/>
-            </>
-          )}
-          {v.city && <Text style={styles.specText}>{v.city}</Text>}
-        </View>
-
-        {/* Flags */}
-        {v.odometerSuspicious && (
-          <View style={styles.flagRow}>
-            <Ionicons name="warning-outline" size={13} color={colors.warning}/>
-            <Text style={styles.flagText}>קילומטראז' חשוד</Text>
+        {/* Stats row: km + city */}
+        {(v.mileage != null || v.city) && (
+          <View style={styles.statsRow}>
+            {v.mileage != null && (
+              <View style={styles.statItem}>
+                <Ionicons name="speedometer-outline" size={12} color={colors.fg3} style={styles.statIcon}/>
+                <Text style={styles.statText}>{fmtKm(v.mileage)}</Text>
+              </View>
+            )}
+            {v.city && (
+              <View style={styles.statItem}>
+                <Ionicons name="location-outline" size={12} color={colors.fg3} style={styles.statIcon}/>
+                <Text style={styles.statText}>{v.city}</Text>
+              </View>
+            )}
           </View>
         )}
+
+        {/* Sparkline */}
+        <View style={styles.sparklineWrap} onLayout={undefined}>
+          <SparklineContainer color={sparkColor}/>
+        </View>
       </View>
     </TouchableOpacity>
+  )
+}
+
+// SparklineContainer uses a fixed width that fills the card content area
+function SparklineContainer({ color }: { color: string }) {
+  const [width, setWidth] = React.useState(280)
+  return (
+    <View
+      onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+      style={{ width: '100%' }}
+    >
+      <Sparkline color={color} width={width}/>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.bg1,
-    borderRadius: radii.xl,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: colors.border1,
+    borderColor: 'rgba(255,255,255,0.06)',
     overflow: 'hidden',
     ...shadows.sm,
   },
+
+  // ── Image ──
   imgWrap: {
     position: 'relative',
-    margin: 6,
-    borderRadius: radii.lg,
+    aspectRatio: 16 / 10,
+    width: '100%',
     overflow: 'hidden',
-    height: 172,
   },
-  imgWrapCompact: { height: 148 },
+  imgWrapCompact: {
+    aspectRatio: 16 / 9,
+  },
   img: {
     width: '100%',
     height: '100%',
-    borderRadius: radii.lg,
     backgroundColor: colors.bg2,
   },
   imgPlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.bg2,
   },
-  sourceTag: {
+
+  // Source badge — bottom-left, white pill with brand-colored text
+  sourceBadge: {
     position: 'absolute',
-    top: 12,
-    left: 12,
+    bottom: 10,
+    left: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
     backgroundColor: 'rgba(255,255,255,0.95)',
     borderRadius: radii.pill,
-    borderWidth: 1,
-    borderColor: colors.border1,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  sourceDot: { width: 6, height: 6, borderRadius: 3 },
-  sourceText: {
+  sourceDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  sourceBadgeText: {
     fontSize: 11,
     fontFamily: fonts.medium,
-    color: colors.fg2,
     fontWeight: '600',
   },
+
+  // Heart button — top-right, dark circle
   heartBtn: {
     position: 'absolute',
     top: 10,
     right: 10,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.95)',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(11,15,20,0.60)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
   },
-  newChip: {
-    position: 'absolute',
-    bottom: 12,
-    left: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: colors.accent,
-    borderRadius: radii.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+
+  // ── Content ──
+  content: {
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 4,
   },
-  newDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#fff' },
-  newChipText: { fontSize: 10.5, fontWeight: '700', color: '#fff', fontFamily: fonts.bold },
-  content: { paddingHorizontal: 16, paddingBottom: 16, paddingTop: 8 },
-  titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   title: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
     color: colors.fg1,
-    letterSpacing: -0.2,
-    fontFamily: fonts.bold,
+    fontFamily: fonts.semibold,
+    letterSpacing: -0.1,
+    marginBottom: 2,
   },
   subtitle: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.fg3,
-    marginTop: 3,
-    fontWeight: '500',
     fontFamily: fonts.regular,
+    fontWeight: '400',
+    marginBottom: 0,
   },
-  badge: {
+
+  // Price row: price on left, badge on right, space-between
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  priceLeft: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+  },
+  price: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.fg1,
+    fontFamily: fonts.bold,
+    letterSpacing: -0.3,
+    writingDirection: 'ltr',
+  },
+  priceDrop: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.success,
+    fontFamily: fonts.medium,
+  },
+  pricePill: {
     borderRadius: radii.pill,
     paddingHorizontal: 10,
     paddingVertical: 4,
     flexShrink: 0,
-    alignSelf: 'flex-start',
-    marginTop: 2,
   },
-  badgeText: { fontSize: 11, fontWeight: '600', fontFamily: fonts.medium },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-    marginTop: 12,
-  },
-  price: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: colors.fg1,
-    letterSpacing: -0.5,
-    fontFamily: fonts.bold,
-    writingDirection: 'ltr',
-  },
-  priceDrop: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.success,
+  pricePillText: {
+    fontSize: 11,
+    fontWeight: '600',
     fontFamily: fonts.medium,
   },
-  specRow: {
+
+  // Stats row
+  statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 10,
-  },
-  specText: {
-    fontSize: 12,
-    color: colors.fg2,
-    fontWeight: '500',
-    fontFamily: fonts.regular,
-    writingDirection: 'ltr',
-  },
-  dot: {
-    width: 3,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: colors.fg4,
-  },
-  flagRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
+    gap: 12,
     marginTop: 8,
   },
-  flagText: {
-    fontSize: 11.5,
-    color: colors.warning,
-    fontWeight: '500',
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  statIcon: {
+    marginTop: 0,
+  },
+  statText: {
+    fontSize: 11,
+    color: colors.fg3,
     fontFamily: fonts.regular,
+    fontWeight: '400',
+    writingDirection: 'ltr',
+  },
+
+  // Sparkline
+  sparklineWrap: {
+    marginTop: 2,
+    marginHorizontal: -14,
+    marginBottom: 0,
+    height: 40,
+    overflow: 'hidden',
   },
 })

@@ -1,71 +1,60 @@
-// AutoMatch Design Tokens — ProTrip language (warm off-white + royal blue)
+// AutoMatch Design Tokens — Dark theme (deep charcoal + electric blue/purple)
 export const colors = {
   // Surfaces
-  bg0: '#F6F2EC',        // page background (warm off-white)
-  bg1: '#FFFFFF',        // sheet / card
-  bg2: '#F1ECE4',        // subtle alt fill (inputs, tiles)
-  bg3: '#EAE3D8',        // hover / pressed
+  bg0: '#0B0F14',        // deep-charcoal page background
+  bg1: '#12171E',        // card / panel surface
+  bg2: '#18212A',        // input / nested surface
+  bg3: '#1F2935',        // hover state
 
   // Ink hierarchy
-  fg1: '#1B1916',        // primary text
-  fg2: '#6D665C',        // secondary
-  fg3: '#A39A8E',        // tertiary / captions
-  fg4: '#C5BEB1',        // placeholder
+  fg1: '#FFFFFF',        // primary text
+  fg2: '#C7CDD6',        // secondary text
+  fg3: '#8D95A3',        // tertiary / captions
+  fg4: '#5A6472',        // disabled
 
   // Borders
-  border1: '#ECE4D8',
-  border2: '#DDD3C3',
+  border1: 'rgba(255,255,255,0.06)',   // hairline
+  border2: 'rgba(255,255,255,0.10)',   // card edge
 
-  // Brand: Royal Blue
-  accent:      '#3450E8',
-  accentSoft:  '#E0E7FC',
-  accentMuted: '#5E78F0',
-  accentInk:   '#1D2E7A',
-  onAccent:    '#FFFFFF',
+  // Brand: Electric Blue
+  accent:       '#5B88FF',            // primary-blue
+  accentPurple: '#BB5CF6',            // accent-purple
+  electricCyan: '#00E5FF',            // electric cyan
+  accentSoft:   'rgba(91,136,255,0.14)',
+  onAccent:     '#FFFFFF',
 
   // Semantic: price signals
-  success:     '#1F5A3D',
-  successSoft: '#DCEBE0',
-  warning:     '#7A4A0D',
-  warningSoft: '#F6E2C4',
-  danger:      '#9A2A14',
-  dangerSoft:  '#FFE2D6',
+  success:     '#22C55E',
+  successSoft: 'rgba(34,197,94,0.14)',
+  warning:     '#F59E0B',
+  warningSoft: 'rgba(245,158,11,0.14)',
+  danger:      '#EF4444',
+  dangerSoft:  'rgba(239,68,68,0.14)',
 
-  // Category accents (source dots)
-  mint:   '#3F8C68',
-  sky:    '#6AA2C2',
-  amber:  '#D69538',
-  lilac:  '#8E7BB1',
-  sand:   '#B49568',
-  coral:  '#EE6A50',
-
-  // Legacy aliases (keep existing components compiling)
-  tintHome:   '#F6F2EC',
-  tintSearch: '#F6F2EC',
-  tintSaved:  '#F6F2EC',
-  tintAlerts: '#F6F2EC',
-  tintDetail: '#F6F2EC',
-  accHome:    '#3450E8',
-  accSearch:  '#3450E8',
-  accSaved:   '#3450E8',
-  accAlerts:  '#3450E8',
-  primaryBlue:    '#3450E8',
-  accentPurple:   '#3450E8',
-  electricCyan:   '#3450E8',
-  border1Legacy:  '#ECE4D8',
-  border2Legacy:  '#DDD3C3',
-  successSoftLegacy: '#DCEBE0',
-  warningSoftLegacy: '#F6E2C4',
-  dangerSoftLegacy:  '#FFE2D6',
+  // Legacy aliases for existing screens — pointing to new values
+  tintHome:   '#0B0F14',
+  tintSearch: '#0B0F14',
+  tintSaved:  '#0B0F14',
+  tintAlerts: '#0B0F14',
+  tintDetail: '#0B0F14',
+  accHome:    '#5B88FF',
+  accSearch:  '#5B88FF',
+  accSaved:   '#5B88FF',
+  accAlerts:  '#5B88FF',
+  primaryBlue:   '#5B88FF',
+  accentMuted:   '#BB5CF6',
+  accentInk:     '#FFFFFF',
 } as const
 
 export const gradients = {
-  accent:  ['#1E2A8C', '#3450E8'] as [string, string],
-  success: ['#1F5A3D', '#2E7D5B'] as [string, string],
-  dark:    ['#FFFFFF', '#F1ECE4'] as [string, string],
-  primary: ['#1E2A8C', '#3450E8'] as [string, string],
-  cool:    ['#3450E8', '#5E78F0'] as [string, string],
-  hero:    ['#1E2A8C', '#3450E8', '#5E78F0'] as [string, string, string],
+  primary:  ['#5B88FF', '#BB5CF6'] as [string, string],           // purple-blue electric
+  cool:     ['#00E5FF', '#5B88FF'] as [string, string],           // cyan-blue
+  hero:     ['#5B88FF', '#BB5CF6', '#00E5FF'] as [string, string, string],
+  heroCard: '#14121F',                                             // hero card base color
+  // Legacy aliases
+  accent:   ['#5B88FF', '#BB5CF6'] as [string, string],
+  success:  ['#22C55E', '#16A34A'] as [string, string],
+  dark:     ['#12171E', '#18212A'] as [string, string],
 } as const
 
 export const spacing = {
@@ -92,32 +81,31 @@ export const fontWeight = {
 
 export const shadows = {
   sm: {
-    shadowColor: 'rgba(40,30,15,1)',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.07,
+    shadowOpacity: 0.45,
     shadowRadius: 12,
     elevation: 2,
   },
   md: {
-    shadowColor: 'rgba(40,30,15,1)',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.09,
-    shadowRadius: 18,
+    shadowOpacity: 0.50,
+    shadowRadius: 24,
     elevation: 4,
   },
+  lg: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.55,
+    shadowRadius: 40,
+    elevation: 10,
+  },
   accent: {
-    shadowColor: '#3450E8',
+    shadowColor: '#5B88FF',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.35,
     shadowRadius: 20,
     elevation: 6,
-  },
-  // Legacy alias — kept for FilterSheet compatibility
-  lg: {
-    shadowColor: 'rgba(40,30,15,1)',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.12,
-    shadowRadius: 28,
-    elevation: 10,
   },
 } as const

@@ -121,7 +121,7 @@ export function DetailScreen({ route, navigation }: Props) {
   if (loading) {
     return (
       <View style={s.centered}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar barStyle="light-content" />
         <ActivityIndicator size="large" color={colors.accent} />
       </View>
     )
@@ -130,7 +130,7 @@ export function DetailScreen({ route, navigation }: Props) {
   if (!listing) {
     return (
       <View style={s.centered}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar barStyle="light-content" />
         <Ionicons name="alert-circle-outline" size={52} color={colors.fg4} />
         <Text style={s.errorText}>המודעה לא נמצאה</Text>
         <TouchableOpacity style={s.backLink} onPress={() => navigation.goBack()}>
@@ -163,7 +163,7 @@ export function DetailScreen({ route, navigation }: Props) {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg0 }}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" />
 
       <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
 

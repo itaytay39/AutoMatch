@@ -206,7 +206,7 @@ export function SearchScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" />
 
       <View style={s.header}>
         <Text style={s.headline}>חיפוש</Text>

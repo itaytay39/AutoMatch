@@ -20,6 +20,7 @@ import { SearchScreen } from './src/screens/SearchScreen'
 import { AlertsScreen } from './src/screens/AlertsScreen'
 import { SavedScreen } from './src/screens/SavedScreen'
 import { DetailScreen } from './src/screens/DetailScreen'
+import { ProfileScreen } from './src/screens/ProfileScreen'
 import { colors } from './src/theme/tokens'
 import { AppTabBar } from './src/navigation/AppTabBar'
 import { addNotificationListener, addResponseListener } from './src/services/pushNotifications'
@@ -35,18 +36,19 @@ SplashScreen.preventAutoHideAsync()
 const RootStack = createStackNavigator<RootStackParamList>()
 const Tab = createBottomTabNavigator()
 
-// Reversed so ראשי renders on the RIGHT in RTL
+// Reversed so בית renders on the RIGHT in RTL
 const TABS = [
-  { name: 'התראות', component: AlertsScreen },
-  { name: 'שמורים', component: SavedScreen  },
-  { name: 'חיפוש',  component: SearchScreen },
-  { name: 'ראשי',   component: HomeScreen   },
+  { name: 'פרופיל',  component: ProfileScreen },
+  { name: 'התראות',  component: AlertsScreen  },
+  { name: 'שמורים',  component: SavedScreen   },
+  { name: 'חיפוש',   component: SearchScreen  },
+  { name: 'בית',     component: HomeScreen    },
 ]
 
 function AppTabs() {
   return (
     <Tab.Navigator
-      initialRouteName="ראשי"
+      initialRouteName="בית"
       tabBar={props => <AppTabBar {...props} />}
       screenOptions={{ headerShown: false }}
     >
