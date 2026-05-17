@@ -1,11 +1,10 @@
 import React, { useEffect, useRef } from 'react'
-import { I18nManager } from 'react-native'
+import { I18nManager, Platform } from 'react-native'
 import { NavigationContainerRef } from '@react-navigation/native'
 import { NavigationContainer } from '@react-navigation/native'
 import { createStackNavigator } from '@react-navigation/stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import * as Notifications from 'expo-notifications'
 import * as SplashScreen from 'expo-splash-screen'
 import {
   useFonts,
@@ -23,7 +22,6 @@ import { DetailScreen } from './src/screens/DetailScreen'
 import { ProfileScreen } from './src/screens/ProfileScreen'
 import { colors } from './src/theme/tokens'
 import { AppTabBar } from './src/navigation/AppTabBar'
-import { addNotificationListener, addResponseListener } from './src/services/pushNotifications'
 import type { RootStackParamList } from './src/navigation/types'
 
 // Force RTL layout globally — Hebrew app
@@ -31,7 +29,9 @@ if (!I18nManager.isRTL) {
   I18nManager.forceRTL(true)
 }
 
-SplashScreen.preventAutoHideAsync()
+if (Platform.OS !== 'web') {
+  SplashScreen.preventAutoHideAsync()
+}
 
 const RootStack = createStackNavigator<RootStackParamList>()
 const Tab = createBottomTabNavigator()
@@ -69,27 +69,23 @@ export default function App() {
     Rubik_700Bold,
   })
 
-  const notifListener = useRef<Notifications.EventSubscription | null>(null)
-  const responseListener = useRef<Notifications.EventSubscription | null>(null)
-
   useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync()
+    if (fontsLoaded && Platform.OS !== 'web') SplashScreen.hideAsync()
   }, [fontsLoaded])
 
   useEffect(() => {
-    notifListener.current = addNotificationListener(notification => {
-      console.log('Push received:', notification.request.content.title)
+    if (Platform.OS === 'web') return
+    let notifSub: any, responseSub: any
+    import('./src/services/pushNotifications').then(({ addNotificationListener, addResponseListener }) => {
+      notifSub = addNotificationListener(n => {
+        console.log('Push received:', n.request.content.title)
+      })
+      responseSub = addResponseListener(response => {
+        const listingId = response.notification.request.content.data?.listingId as string | undefined
+        if (listingId && navRef.current) navRef.current.navigate('Detail', { listingId })
+      })
     })
-    responseListener.current = addResponseListener(response => {
-      const listingId = response.notification.request.content.data?.listingId as string | undefined
-      if (listingId && navRef.current) {
-        navRef.current.navigate('Detail', { listingId })
-      }
-    })
-    return () => {
-      notifListener.current?.remove()
-      responseListener.current?.remove()
-    }
+    return () => { notifSub?.remove(); responseSub?.remove() }
   }, [])
 
   if (!fontsLoaded) return null

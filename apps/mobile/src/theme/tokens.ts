@@ -1,60 +1,68 @@
-// AutoMatch Design Tokens — Dark theme (deep charcoal + electric blue/purple)
 export const colors = {
   // Surfaces
-  bg0: '#0B0F14',        // deep-charcoal page background
-  bg1: '#12171E',        // card / panel surface
-  bg2: '#18212A',        // input / nested surface
-  bg3: '#1F2935',        // hover state
+  bg0: '#F6F2EC',       // bg-warm: page background
+  bg1: '#FFFFFF',       // sheet: card/panel
+  bg2: '#F1ECE4',       // sheet-2: input/tile fill
+  bg3: '#EAE3D8',       // sheet-3: hover/pressed
 
   // Ink hierarchy
-  fg1: '#FFFFFF',        // primary text
-  fg2: '#C7CDD6',        // secondary text
-  fg3: '#8D95A3',        // tertiary / captions
-  fg4: '#5A6472',        // disabled
+  fg1: '#1B1916',       // ink: primary text
+  fg2: '#6D665C',       // ink-2: secondary
+  fg3: '#A39A8E',       // ink-3: tertiary/captions
+  fg4: '#C5BEB1',       // ink-4: placeholder/disabled
+  fg5: '#DDD3C3',       // ink-5: decorative
 
-  // Borders
-  border1: 'rgba(255,255,255,0.06)',   // hairline
-  border2: 'rgba(255,255,255,0.10)',   // card edge
+  // Lines/borders
+  border1: '#ECE4D8',   // line: hairline
+  border2: '#DDD3C3',   // line-2: stronger separator
 
-  // Brand: Electric Blue
-  accent:       '#5B88FF',            // primary-blue
-  accentPurple: '#BB5CF6',            // accent-purple
-  electricCyan: '#00E5FF',            // electric cyan
-  accentSoft:   'rgba(91,136,255,0.14)',
-  onAccent:     '#FFFFFF',
+  // Brand: Royal Blue
+  accent:      '#3450E8',
+  accentDark:  '#1F37C2',
+  accentSoft:  '#E0E7FC',
+  accentInk:   '#1D2E7A',
+  accentMuted: '#5E78F0',
+  onAccent:    '#FFFFFF',
 
-  // Semantic: price signals
-  success:     '#22C55E',
-  successSoft: 'rgba(34,197,94,0.14)',
-  warning:     '#F59E0B',
-  warningSoft: 'rgba(245,158,11,0.14)',
-  danger:      '#EF4444',
-  dangerSoft:  'rgba(239,68,68,0.14)',
+  // Semantic: price/trend signals
+  success:      '#1F5A3D',  // good: price drop
+  successSoft:  '#DCEBE0',  // good-bg
+  warning:      '#7A4A0D',  // warn: fair/sideways
+  warningSoft:  '#F6E2C4',  // warn-bg
+  danger:       '#9A2A14',  // bad: price up
+  dangerSoft:   '#FFE2D6',  // bad-bg
 
-  // Legacy aliases for existing screens — pointing to new values
-  tintHome:   '#0B0F14',
-  tintSearch: '#0B0F14',
-  tintSaved:  '#0B0F14',
-  tintAlerts: '#0B0F14',
-  tintDetail: '#0B0F14',
-  accHome:    '#5B88FF',
-  accSearch:  '#5B88FF',
-  accSaved:   '#5B88FF',
-  accAlerts:  '#5B88FF',
-  primaryBlue:   '#5B88FF',
-  accentMuted:   '#BB5CF6',
-  accentInk:     '#FFFFFF',
+  // Source dot accents
+  mint:   '#3F8C68',
+  sky:    '#6AA2C2',
+  amber:  '#D69538',
+  lilac:  '#8E7BB1',
+  sand:   '#B49568',
+  coral:  '#EE6A50',
+
+  // Legacy aliases (keep existing screens compiling)
+  tintHome:   '#F6F2EC',
+  tintSearch: '#F6F2EC',
+  tintSaved:  '#F6F2EC',
+  tintAlerts: '#F6F2EC',
+  tintDetail: '#F6F2EC',
+  accHome:    '#3450E8',
+  accSearch:  '#3450E8',
+  accSaved:   '#3450E8',
+  accAlerts:  '#3450E8',
+  primaryBlue:   '#3450E8',
+  electricCyan:  '#3450E8',
+  accentPurple:  '#3450E8',
 } as const
 
 export const gradients = {
-  primary:  ['#5B88FF', '#BB5CF6'] as [string, string],           // purple-blue electric
-  cool:     ['#00E5FF', '#5B88FF'] as [string, string],           // cyan-blue
-  hero:     ['#5B88FF', '#BB5CF6', '#00E5FF'] as [string, string, string],
-  heroCard: '#14121F',                                             // hero card base color
-  // Legacy aliases
-  accent:   ['#5B88FF', '#BB5CF6'] as [string, string],
-  success:  ['#22C55E', '#16A34A'] as [string, string],
-  dark:     ['#12171E', '#18212A'] as [string, string],
+  hero:    ['#1E2A8C', '#3450E8', '#5E78F0'] as [string, string, string],
+  accent:  ['#1E2A8C', '#3450E8'] as [string, string],
+  finance: ['#1E2A8C', '#3450E8', '#5E78F0'] as [string, string, string],
+  primary: ['#1E2A8C', '#3450E8'] as [string, string],
+  cool:    ['#3450E8', '#5E78F0'] as [string, string],
+  dark:    ['#FFFFFF', '#F1ECE4'] as [string, string],
+  heroCard: '#14121F',
 } as const
 
 export const spacing = {
@@ -62,7 +70,7 @@ export const spacing = {
 } as const
 
 export const radii = {
-  xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 28, pill: 999,
+  xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, pill: 999,
 } as const
 
 export const fontSize = {
@@ -70,7 +78,6 @@ export const fontSize = {
   title: 16, body: 14, caption: 12, micro: 10,
 } as const
 
-// Legacy fontWeight export — kept for AnomalyBadge, ConditionBadge compatibility
 export const fontWeight = {
   regular:  '400' as const,
   medium:   '500' as const,
@@ -81,28 +88,28 @@ export const fontWeight = {
 
 export const shadows = {
   sm: {
-    shadowColor: '#000000',
+    shadowColor: 'rgba(40,30,15,1)',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.45,
+    shadowOpacity: 0.07,
     shadowRadius: 12,
     elevation: 2,
   },
   md: {
-    shadowColor: '#000000',
+    shadowColor: 'rgba(40,30,15,1)',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.50,
-    shadowRadius: 24,
+    shadowOpacity: 0.09,
+    shadowRadius: 18,
     elevation: 4,
   },
   lg: {
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 18 },
-    shadowOpacity: 0.55,
-    shadowRadius: 40,
+    shadowColor: 'rgba(40,30,15,1)',
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.15,
+    shadowRadius: 32,
     elevation: 10,
   },
   accent: {
-    shadowColor: '#5B88FF',
+    shadowColor: '#3450E8',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.35,
     shadowRadius: 20,

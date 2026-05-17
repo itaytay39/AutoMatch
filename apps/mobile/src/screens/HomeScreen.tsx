@@ -1,25 +1,23 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import {
-  View, Text, FlatList, TouchableOpacity,
-  StyleSheet, StatusBar, ActivityIndicator,
-  ScrollView, TextInput,
-  ListRenderItem,
+  View, Text, TouchableOpacity, StyleSheet, StatusBar,
+  ActivityIndicator, ScrollView, ListRenderItem, FlatList,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import { LinearGradient } from 'expo-linear-gradient'
+import Svg, { Path, Circle } from 'react-native-svg'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import { ListingCard, type ListingCardData } from '../components/ListingCard'
-import { colors, spacing, fontSize, radii, shadows } from '../theme/tokens'
+import { colors, spacing, radii, shadows, gradients } from '../theme/tokens'
 import { fonts } from '../theme/typography'
 import { api } from '../services/api'
 import type { RootStackParamList } from '../navigation/types'
 
 type Nav = StackNavigationProp<RootStackParamList>
 
-const PAGE_SIZE = 15
-
-const CHIPS = ['הכל', 'חשמלי', 'היברידי', 'אוטומט', 'עד ₪150K', '2020+']
+const PAGE_SIZE = 20
 
 function toCard(l: any): ListingCardData {
   const rating = l.market?.priceRating ?? 'unknown'
@@ -34,20 +32,159 @@ function toCard(l: any): ListingCardData {
     priceLabel, daysOnLot: l.daysOnLot,
     odometerSuspicious: l.odometerSuspicious,
     redFlags: l.redFlags, dealScore: l.dealScore,
+    priceDelta: l.priceDelta,
   }
 }
 
+// ── Stat tile ─────────────────────────────────────────────────
+function StatTile({ label, value, sub, subGood }: {
+  label: string; value: string; sub?: string; subGood?: boolean
+}) {
+  return (
+    <View style={st.card}>
+      <Text style={st.eyebrow}>{label}</Text>
+      <Text style={st.value}>{value}</Text>
+      {sub ? (
+        <Text style={[st.sub, subGood && { color: colors.success }]}>{sub}</Text>
+      ) : null}
+    </View>
+  )
+}
+
+const st = StyleSheet.create({
+  card: {
+    flex: 1,
+    backgroundColor: colors.bg1,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border1,
+    padding: 14,
+    ...shadows.sm,
+  },
+  eyebrow: {
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.7,
+    textTransform: 'uppercase',
+    color: colors.fg3,
+    fontFamily: fonts.semibold,
+  },
+  value: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: colors.fg1,
+    fontFamily: fonts.bold,
+    marginTop: 4,
+    lineHeight: 28,
+  },
+  sub: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.fg3,
+    fontFamily: fonts.semibold,
+    marginTop: 4,
+  },
+})
+
+// ── Recent thumb ──────────────────────────────────────────────
+function RecentThumb({ item, onPress }: { item: ListingCardData; onPress: () => void }) {
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.75} style={rt.card}>
+      <View style={rt.imgPlaceholder}>
+        <Ionicons name="car-outline" size={28} color={colors.fg4} />
+      </View>
+      <View style={rt.info}>
+        <Text style={rt.name} numberOfLines={1}>{item.make} {item.model}</Text>
+        <Text style={rt.price}>{item.price ? `₪${item.price.toLocaleString('he-IL')}` : '—'}</Text>
+      </View>
+    </TouchableOpacity>
+  )
+}
+
+const rt = StyleSheet.create({
+  card: {
+    width: 156,
+    backgroundColor: colors.bg1,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border1,
+    overflow: 'hidden',
+    flexShrink: 0,
+    ...shadows.sm,
+  },
+  imgPlaceholder: {
+    height: 84,
+    backgroundColor: colors.bg2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  info: { paddingHorizontal: 10, paddingTop: 8, paddingBottom: 10 },
+  name: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.fg1,
+    fontFamily: fonts.bold,
+    letterSpacing: -0.1,
+  },
+  price: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.fg1,
+    fontFamily: fonts.bold,
+    marginTop: 4,
+  },
+})
+
+// ── SectionHeader ─────────────────────────────────────────────
+function SectionHeader({ title, action, onAction }: {
+  title: string; action?: string; onAction?: () => void
+}) {
+  return (
+    <View style={sh.row}>
+      {action ? (
+        <TouchableOpacity onPress={onAction}>
+          <Text style={sh.action}>{action}</Text>
+        </TouchableOpacity>
+      ) : null}
+      <Text style={sh.title}>{title}</Text>
+    </View>
+  )
+}
+
+const sh = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  title: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: colors.fg1,
+    fontFamily: fonts.bold,
+    letterSpacing: -0.2,
+  },
+  action: {
+    fontSize: 13,
+    color: colors.accent,
+    fontFamily: fonts.medium,
+  },
+})
+
+// ═══════════════════════════════════════════════════════════════
+// Main screen
+// ═══════════════════════════════════════════════════════════════
 export function HomeScreen() {
   const navigation = useNavigation<Nav>()
   const [listings, setListings] = useState<ListingCardData[]>([])
   const [total, setTotal] = useState(0)
-  const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
+  const [page, setPage] = useState(1)
   const [error, setError] = useState(false)
-  const [activeChip, setActiveChip] = useState('הכל')
 
   const fetchFirst = useCallback(async () => {
     setError(false); setPage(1); setHasMore(true)
@@ -82,9 +219,13 @@ export function HomeScreen() {
   useEffect(() => { fetchFirst() }, [fetchFirst])
   const onRefresh = () => { setRefreshing(true); fetchFirst() }
 
-  const goodDeals = listings.filter(l => l.priceLabel === 'good').length
-  const newToday  = listings.filter(l => (l.daysOnLot ?? 99) === 0).length
-  const priceDrop = listings.filter(l => (l as any).priceDelta && (l as any).priceDelta < 0).length
+  const freshListings = listings.filter(l => (l.daysOnLot ?? 99) === 0)
+  const dropListings  = listings.filter(l => l.priceDelta != null && l.priceDelta < 0)
+  const newTodayCount = freshListings.length
+  const dropsCount    = dropListings.length
+
+  const goSearch = () => (navigation as any).navigate('חיפוש')
+  const goAlerts = () => (navigation as any).navigate('התראות')
 
   const renderItem: ListRenderItem<ListingCardData> = ({ item }) => (
     <ListingCard
@@ -95,107 +236,166 @@ export function HomeScreen() {
 
   const Header = () => (
     <>
-      {/* Top bar */}
+      {/* ── Top bar ──────────────────────────────────────────── */}
       <View style={s.topBar}>
-        <View style={s.greetCol}>
-          <Text style={s.greetSub}>בוקר טוב</Text>
-          <Text style={s.greetName}>
-            {goodDeals > 0
-              ? `${goodDeals} רכבי מחיר טוב זמינים`
-              : 'מה נמצא לך היום?'}
-          </Text>
-        </View>
         <TouchableOpacity style={s.avatar}>
           <Text style={s.avatarText}>א</Text>
         </TouchableOpacity>
-      </View>
-
-      {/* Search bar */}
-      <View style={s.searchWrap}>
-        <View style={s.searchBar}>
-          <Ionicons name="search-outline" size={20} color={colors.fg3} />
-          <Text style={s.searchPlaceholder}>חפש רכב, דגם, יצרן...</Text>
-          <TouchableOpacity
-            style={s.filterBtn}
-            onPress={() => (navigation as any).navigate('חיפוש')}
-          >
-            <Ionicons name="options-outline" size={18} color="#fff" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Quick chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={s.chipsRow}
-        style={s.chipScroll}
-      >
-        {CHIPS.map(chip => (
-          <TouchableOpacity
-            key={chip}
-            style={[s.chip, activeChip === chip && s.chipActive]}
-            onPress={() => setActiveChip(chip)}
-          >
-            <Text style={[s.chipText, activeChip === chip && s.chipTextActive]}>{chip}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Hero insight card */}
-      <View style={s.heroCardWrap}>
-        <View style={s.heroCard}>
-          <View style={s.heroGlow1} />
-          <View style={s.heroGlow2} />
-          <Text style={s.heroMicro}>המלצה אישית</Text>
-          <Text style={s.heroTitle}>
-            {loading
-              ? '...'
-              : `${newToday > 0 ? newToday : 3} רכבים חדשים\nשתואמים את החיפוש שלך`}
+        <View style={s.greetBlock}>
+          <Text style={s.greetSub}>שלום איתי</Text>
+          <Text style={s.greetTitle} numberOfLines={1}>
+            {loading ? 'טוען...' : newTodayCount > 0
+              ? `${newTodayCount} רכבים חדשים ירדו היום`
+              : '2 רכבי יד ראשונה ירדו היום'}
           </Text>
-          <Text style={s.heroMeta}>
-            ירידה ממוצעת של{' '}
-            <Text style={s.heroMetaNum}>₪4,200</Text>
-            {' '}בשבוע האחרון
-          </Text>
-          <TouchableOpacity
-            style={s.heroCta}
-            onPress={() => (navigation as any).navigate('חיפוש')}
-          >
-            <Text style={s.heroCtaText}>צפה בכולם</Text>
-            <Ionicons name="chevron-back" size={14} color="#14121F" />
-          </TouchableOpacity>
         </View>
-      </View>
-
-      {/* Stat trio */}
-      <View style={s.statTrio}>
-        <StatMini label="פעילים"  value={loading ? '—' : total > 0 ? `${(total / 1000).toFixed(0)}K` : '—'} delta={`↑ 4.2%`} up />
-        <StatMini label="ממוצע"   value="₪142K" delta="↓ 1.8%" up={false} />
-        <StatMini label="ירידות"  value={loading ? '—' : String(priceDrop > 0 ? priceDrop : 238)} delta="היום" up />
-      </View>
-
-      {/* Section header */}
-      <View style={s.sectionHeader}>
-        <TouchableOpacity onPress={() => (navigation as any).navigate('חיפוש')}>
-          <Text style={s.seeAll}>הכל</Text>
+        <TouchableOpacity style={s.searchBtn} onPress={goSearch}>
+          <Ionicons name="search-outline" size={18} color={colors.fg2} />
         </TouchableOpacity>
-        <Text style={s.sectionTitle}>מחקר השוק שלך</Text>
       </View>
 
-      {error && (
-        <View style={s.errorBanner}>
-          <Ionicons name="cloud-offline-outline" size={16} color={colors.danger} />
-          <Text style={s.errorText}>בעיית חיבור — </Text>
-          <TouchableOpacity onPress={fetchFirst}>
-            <Text style={s.retryLink}>נסה שוב</Text>
-          </TouchableOpacity>
+      {/* ── Hero gradient card ───────────────────────────────── */}
+      <View style={s.heroWrap}>
+        <LinearGradient
+          colors={gradients.hero}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={s.heroCard}
+        >
+          {/* decorative dashed path */}
+          <Svg
+            width={140} height={100}
+            style={s.heroDeco}
+          >
+            <Path
+              d="M0 90 Q 60 30 130 16"
+              stroke="#fff"
+              strokeWidth={1.5}
+              strokeDasharray="3 5"
+              fill="none"
+            />
+            <Circle cx={130} cy={16} r={3} fill="#fff" />
+          </Svg>
+
+          <View style={{ position: 'relative' }}>
+            <Text style={s.heroEyebrow}>ירידות מחיר השבוע</Text>
+            <View style={s.heroNumRow}>
+              <Text style={s.heroPct}>3.1%</Text>
+              <Text style={s.heroNumLabel}>ירידה ממוצעת</Text>
+            </View>
+            <Text style={s.heroSub}>קורולה הייבריד יד 1 ירדה ב-₪4,100 בשבוע האחרון</Text>
+            <TouchableOpacity style={s.heroCta} onPress={goAlerts}>
+              <Text style={s.heroCtaText}>צפו בירידות</Text>
+              <Ionicons name="chevron-back" size={14} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+      </View>
+
+      {/* ── Stat row ──────────────────────────────────────────── */}
+      <View style={s.statSection}>
+        <SectionHeader title="היום במערכת" />
+        <View style={s.statRow}>
+          <StatTile
+            label="חדש היום"
+            value={loading ? '—' : String(newTodayCount > 0 ? newTodayCount : 3)}
+            sub="● תואם חיפוש"
+            subGood
+          />
+          <StatTile
+            label="ירידות"
+            value={loading ? '—' : String(dropsCount > 0 ? dropsCount : 238)}
+            sub="↑ 12 חדשות"
+            subGood
+          />
+          <StatTile
+            label="שמורים"
+            value="17"
+            sub="3 חדשים"
+          />
+        </View>
+      </View>
+
+      {/* ── Recently viewed ───────────────────────────────────── */}
+      {listings.length > 0 && (
+        <View style={s.recentSection}>
+          <View style={s.sectionPad}>
+            <SectionHeader title="צפית לאחרונה" />
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={s.recentScroll}
+          >
+            {listings.slice(0, 4).map(item => (
+              <RecentThumb
+                key={item.id}
+                item={item}
+                onPress={() => navigation.navigate('Detail', { listingId: item.id })}
+              />
+            ))}
+          </ScrollView>
         </View>
       )}
 
-      {loading && (
-        <ActivityIndicator color={colors.accent} style={{ paddingVertical: 24 }} />
+      {/* ── Fresh listings ────────────────────────────────────── */}
+      {(freshListings.length > 0 || (!loading && listings.length > 0)) && (
+        <View style={s.feedSection}>
+          <SectionHeader
+            title="חדשים תואמים"
+            action="הצג הכל"
+            onAction={goSearch}
+          />
+          {(freshListings.length > 0 ? freshListings : listings).slice(0, 2).map(item => (
+            <View key={item.id} style={{ marginBottom: 12 }}>
+              <ListingCard
+                listing={item}
+                onPress={() => navigation.navigate('Detail', { listingId: item.id })}
+              />
+            </View>
+          ))}
+        </View>
       )}
+
+      {/* ── Price drops ───────────────────────────────────────── */}
+      {dropListings.length > 0 && (
+        <View style={s.feedSection}>
+          <SectionHeader
+            title="ירידות מחיר חמות"
+            action="הכל"
+            onAction={goSearch}
+          />
+          {dropListings.slice(0, 2).map(item => (
+            <View key={item.id} style={{ marginBottom: 12 }}>
+              <ListingCard
+                listing={item}
+                onPress={() => navigation.navigate('Detail', { listingId: item.id })}
+              />
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* ── All listings header ───────────────────────────────── */}
+      <View style={s.allHeader}>
+        <SectionHeader
+          title="כל הרכבים"
+          action="חיפוש מתקדם"
+          onAction={goSearch}
+        />
+        {error && (
+          <View style={s.errorBanner}>
+            <Ionicons name="cloud-offline-outline" size={16} color={colors.danger} />
+            <Text style={s.errorText}>בעיית חיבור — </Text>
+            <TouchableOpacity onPress={fetchFirst}>
+              <Text style={s.retryLink}>נסה שוב</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {loading && (
+          <ActivityIndicator color={colors.accent} style={{ paddingVertical: 24 }} />
+        )}
+      </View>
     </>
   )
 
@@ -209,7 +409,7 @@ export function HomeScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.bg0} />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.bg0} />
       <FlatList
         data={loading ? [] : listings}
         keyExtractor={l => l.id}
@@ -234,281 +434,167 @@ export function HomeScreen() {
   )
 }
 
-function StatMini({ label, value, delta, up }: { label: string; value: string; delta: string; up: boolean }) {
-  return (
-    <View style={sm.card}>
-      <Text style={sm.label}>{label}</Text>
-      <Text style={sm.value}>{value}</Text>
-      <Text style={[sm.delta, { color: up ? colors.success : colors.danger }]}>{delta}</Text>
-    </View>
-  )
-}
-
-const sm = StyleSheet.create({
-  card: {
-    flex: 1,
-    backgroundColor: colors.bg1,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border1,
-    padding: 12,
-  },
-  label: {
-    fontSize: 10,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: colors.fg3,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-  },
-  value: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.fg1,
-    fontFamily: fonts.bold,
-    marginTop: 6,
-  },
-  delta: {
-    fontSize: 11,
-    marginTop: 2,
-    fontFamily: fonts.medium,
-  },
-})
-
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg0 },
+  listContent: { paddingBottom: 110 },
 
+  // top bar
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing[5],
-    paddingTop: spacing[3],
-    paddingBottom: spacing[2],
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 8,
   },
-  greetCol: { flex: 1 },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 999,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.accent,
+    flexShrink: 0,
+  },
+  avatarText: { color: '#fff', fontSize: 16, fontFamily: fonts.bold, fontWeight: '800' },
+  greetBlock: { flex: 1, minWidth: 0 },
   greetSub: {
     fontSize: 13,
-    color: colors.fg3,
+    color: colors.fg2,
     fontFamily: fonts.regular,
-    textAlign: 'right',
   },
-  greetName: {
-    fontSize: 20,
+  greetTitle: {
+    fontSize: 17,
     fontWeight: '700',
     color: colors.fg1,
     fontFamily: fonts.bold,
-    letterSpacing: -0.4,
-    textAlign: 'right',
-    marginTop: 2,
+    letterSpacing: -0.2,
+    marginTop: 1,
   },
-  avatar: {
+  searchBtn: {
     width: 40,
     height: 40,
-    borderRadius: radii.pill,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing[3],
-    shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 4,
-  },
-  avatarText: { color: '#fff', fontSize: 16, fontFamily: fonts.bold },
-
-  searchWrap: {
-    paddingHorizontal: spacing[5],
-    paddingTop: spacing[2],
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 52,
-    backgroundColor: colors.bg1,
-    borderRadius: 16,
-    paddingHorizontal: 16,
+    borderRadius: 999,
     borderWidth: 1,
     borderColor: colors.border1,
-    gap: 10,
-  },
-  searchPlaceholder: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.fg3,
-    fontFamily: fonts.regular,
-    textAlign: 'right',
-  },
-  filterBtn: {
-    width: 40,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 4,
-  },
-
-  chipScroll: { marginTop: spacing[4] },
-  chipsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: spacing[5],
-    paddingBottom: 2,
-  },
-  chip: {
-    height: 32,
-    paddingHorizontal: 14,
-    borderRadius: radii.pill,
     backgroundColor: colors.bg1,
-    borderWidth: 1,
-    borderColor: colors.border1,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
-  chipActive: {
-    backgroundColor: colors.accent,
-    borderColor: 'transparent',
-  },
-  chipText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: colors.fg2,
-    fontFamily: fonts.medium,
-  },
-  chipTextActive: { color: '#fff', fontWeight: '600' },
 
-  heroCardWrap: {
-    paddingHorizontal: spacing[5],
-    paddingTop: spacing[4],
-  },
+  // hero
+  heroWrap: { paddingHorizontal: 20, paddingTop: 10 },
   heroCard: {
     borderRadius: 24,
     padding: 20,
-    backgroundColor: '#14121F',
-    minHeight: 168,
+    minHeight: 152,
     overflow: 'hidden',
     position: 'relative',
-    shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 24,
-    elevation: 8,
+    ...shadows.accent,
   },
-  heroGlow1: {
+  heroDeco: {
     position: 'absolute',
-    top: -40,
-    left: -40,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(91,136,255,0.30)',
+    left: -10,
+    top: -10,
+    opacity: 0.22,
   },
-  heroGlow2: {
-    position: 'absolute',
-    bottom: -40,
-    right: -40,
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: 'rgba(187,92,246,0.25)',
-  },
-  heroMicro: {
-    fontSize: 10,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
+  heroEyebrow: {
+    fontSize: 11,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(255,255,255,0.9)',
     fontFamily: fonts.semibold,
-    textAlign: 'right',
-    marginBottom: 8,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
   },
-  heroTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+  heroNumRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+    marginTop: 8,
+  },
+  heroPct: {
+    fontSize: 44,
+    fontWeight: '800',
     color: '#fff',
     fontFamily: fonts.bold,
-    lineHeight: 28,
-    textAlign: 'right',
-    marginBottom: 14,
+    lineHeight: 48,
+    letterSpacing: -1.5,
   },
-  heroMeta: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.85)',
+  heroNumLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.92)',
+    fontFamily: fonts.semibold,
+  },
+  heroSub: {
+    fontSize: 12.5,
+    color: 'rgba(255,255,255,0.88)',
     fontFamily: fonts.regular,
-    textAlign: 'right',
-    marginBottom: 12,
-  },
-  heroMetaNum: {
-    fontFamily: fonts.bold,
-    color: '#fff',
+    lineHeight: 18,
+    marginTop: 6,
   },
   heroCta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    height: 40,
-    paddingHorizontal: 16,
-    borderRadius: radii.pill,
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    alignSelf: 'flex-end',
+    height: 36,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignSelf: 'flex-start',
+    marginTop: 14,
   },
   heroCtaText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#14121F',
-    fontFamily: fonts.semibold,
+    fontWeight: '700',
+    color: '#fff',
+    fontFamily: fonts.bold,
   },
 
-  statTrio: {
+  // stat
+  statSection: { paddingHorizontal: 20, paddingTop: 20 },
+  statRow: { flexDirection: 'row', gap: 10 },
+
+  // recently viewed
+  recentSection: { marginTop: 20 },
+  sectionPad: { paddingHorizontal: 20 },
+  recentScroll: {
     flexDirection: 'row',
     gap: 10,
-    paddingHorizontal: spacing[5],
-    paddingTop: spacing[4],
+    paddingHorizontal: 20,
+    paddingBottom: 4,
   },
 
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing[5],
-    marginTop: spacing[5],
-    marginBottom: spacing[3],
-  },
-  sectionTitle: {
-    color: colors.fg1,
-    fontSize: 17,
-    fontWeight: '600',
-    fontFamily: fonts.semibold,
-    letterSpacing: -0.2,
-  },
-  seeAll: { color: colors.accent, fontSize: 13, fontFamily: fonts.medium },
+  // feed sections
+  feedSection: { paddingHorizontal: 20, paddingTop: 20 },
+  allHeader: { paddingHorizontal: 20, paddingTop: 20 },
 
+  // error
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginHorizontal: spacing[5],
-    marginBottom: spacing[3],
+    marginBottom: 12,
     backgroundColor: colors.bg1,
     borderRadius: radii.md,
     borderWidth: 0.5,
     borderColor: colors.danger,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  errorText: { color: colors.danger, fontSize: fontSize.caption, fontFamily: fonts.regular },
-  retryLink: { color: colors.accent, fontSize: fontSize.caption, fontFamily: fonts.semibold },
+  errorText: { color: colors.danger, fontSize: 12, fontFamily: fonts.regular },
+  retryLink: { color: colors.accent, fontSize: 12, fontFamily: fonts.semibold },
 
-  listContent: { paddingBottom: 100, paddingHorizontal: spacing[5] },
-  endText: { color: colors.fg4, fontSize: fontSize.caption, textAlign: 'center', paddingVertical: 20 },
-
+  endText: {
+    color: colors.fg4,
+    fontSize: 12,
+    textAlign: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+  },
   emptyWrap: { alignItems: 'center', paddingVertical: 56, gap: 10 },
-  emptyText: { color: colors.fg2, fontSize: fontSize.body, fontFamily: fonts.medium },
-  emptyHint: { color: colors.fg3, fontSize: fontSize.caption },
+  emptyText: { color: colors.fg2, fontSize: 14, fontFamily: fonts.medium },
+  emptyHint: { color: colors.fg3, fontSize: 12 },
 })

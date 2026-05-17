@@ -97,7 +97,7 @@ export function SavedScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.tintSaved} />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.bg0} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
