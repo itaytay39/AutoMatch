@@ -2,7 +2,7 @@ name: EAS Preview Build (Android APK)
 
 on:
   push:
-    branches: ['claude/**', 'main']
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -31,3 +31,10 @@ jobs:
       - name: Build APK
         working-directory: apps/mobile
         run: eas build --profile preview --platform android --non-interactive
+
+      - name: Print download URL
+        working-directory: apps/mobile
+        run: |
+          echo "✅ Build submitted to EAS cloud"
+          echo "📱 Download link will appear at:"
+          echo "   https://expo.dev/accounts/itaytay40s-organization/projects/automatch/builds"

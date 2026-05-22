@@ -49,3 +49,25 @@ try {
   app.log.error(err)
   process.exit(1)
 }
+
+// Auto-seed DB and trigger scrape if empty
+try {
+  const count = await app.prisma.listing.count()
+  if (count === 0) {
+    app.log.info('DB empty — auto-seeding and triggering scrape')
+    // Seed placeholder listings so app loads immediately
+    await fetch(`http://localhost:${process.env.PORT ?? 3000}/api/v1/admin/seed`, {
+      method: 'POST',
+      headers: { 'x-admin-secret': process.env.ADMIN_SECRET ?? 'automatch-dev' },
+    })
+    // Trigger real scrape from yad2/autoboom
+    await fetch(`http://localhost:${process.env.PORT ?? 3000}/api/v1/admin/scrape`, {
+      method: 'POST',
+      headers: { 'x-admin-secret': process.env.ADMIN_SECRET ?? 'automatch-dev', 'content-type': 'application/json' },
+      body: JSON.stringify({}),
+    })
+    app.log.info('Auto-seed and scrape triggered')
+  }
+} catch (e) {
+  // non-fatal
+}
