@@ -19,7 +19,6 @@ import { SearchScreen } from './src/screens/SearchScreen'
 import { AlertsScreen } from './src/screens/AlertsScreen'
 import { SavedScreen } from './src/screens/SavedScreen'
 import { DetailScreen } from './src/screens/DetailScreen'
-import { ProfileScreen } from './src/screens/ProfileScreen'
 import { colors } from './src/theme/tokens'
 import { AppTabBar } from './src/navigation/AppTabBar'
 import type { RootStackParamList } from './src/navigation/types'
@@ -36,13 +35,12 @@ if (Platform.OS !== 'web') {
 const RootStack = createStackNavigator<RootStackParamList>()
 const Tab = createBottomTabNavigator()
 
-// Reversed so בית renders on the RIGHT in RTL
+// RTL reverses tab order visually — put בית first so it appears on the RIGHT
 const TABS = [
-  { name: 'פרופיל',  component: ProfileScreen },
-  { name: 'התראות',  component: AlertsScreen  },
-  { name: 'שמורים',  component: SavedScreen   },
-  { name: 'חיפוש',   component: SearchScreen  },
-  { name: 'בית',     component: HomeScreen    },
+  { name: 'בית',    component: HomeScreen   },
+  { name: 'חיפוש',  component: SearchScreen },
+  { name: 'שמורים', component: SavedScreen  },
+  { name: 'התראות', component: AlertsScreen },
 ]
 
 function AppTabs() {

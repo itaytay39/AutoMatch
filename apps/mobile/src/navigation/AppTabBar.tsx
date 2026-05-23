@@ -10,10 +10,10 @@ import { useSaved } from '../store/savedStore'
 type IoniconName = React.ComponentProps<typeof Ionicons>['name']
 
 const TABS: { name: string; icon: IoniconName; iconActive: IoniconName }[] = [
-  { name: 'התראות', icon: 'notifications-outline', iconActive: 'notifications' },
-  { name: 'שמורים', icon: 'bookmark-outline',       iconActive: 'bookmark'      },
-  { name: 'חיפוש',  icon: 'search-outline',         iconActive: 'search'        },
-  { name: 'ראשי',   icon: 'home-outline',            iconActive: 'home'          },
+  { name: 'בית',    icon: 'home-outline',            iconActive: 'home'          },
+  { name: 'חיפוש',  icon: 'search-outline',          iconActive: 'search'        },
+  { name: 'שמורים', icon: 'bookmark-outline',        iconActive: 'bookmark'      },
+  { name: 'התראות', icon: 'notifications-outline',   iconActive: 'notifications' },
 ]
 
 export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
