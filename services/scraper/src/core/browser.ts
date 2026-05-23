@@ -1,9 +1,4 @@
-import { chromium } from 'playwright-extra'
-import StealthPlugin from 'puppeteer-extra-plugin-stealth'
-import { Browser, BrowserContext } from 'playwright'
-
-// Register stealth plugin globally — must happen before any launch()
-chromium.use(StealthPlugin())
+import type { Browser, BrowserContext } from 'playwright'
 
 const USER_AGENTS = [
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
@@ -15,18 +10,16 @@ let _browser: Browser | null = null
 
 export async function getBrowser(): Promise<Browser> {
   if (!_browser || !_browser.isConnected()) {
+    // Dynamic import so missing playwright doesn't crash the process at startup
+    const { chromium } = await import('playwright-extra')
+    const { default: StealthPlugin } = await import('puppeteer-extra-plugin-stealth')
+    chromium.use(StealthPlugin())
+
     const launchArgs: string[] = ['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled']
-
-    // Use residential proxy if configured
     const proxyUrl = process.env.PROXY_URL || process.env.BRIGHTDATA_PROXY_URL
-    if (proxyUrl) {
-      launchArgs.push(`--proxy-server=${proxyUrl}`)
-    }
+    if (proxyUrl) launchArgs.push(`--proxy-server=${proxyUrl}`)
 
-    _browser = await chromium.launch({
-      headless: true,
-      args: launchArgs,
-    })
+    _browser = await chromium.launch({ headless: true, args: launchArgs })
   }
   return _browser
 }
@@ -39,17 +32,10 @@ export async function newStealthContext(): Promise<BrowserContext> {
     locale: 'he-IL',
     timezoneId: 'Asia/Jerusalem',
     viewport: { width: 1366, height: 768 },
-    extraHTTPHeaders: {
-      'Accept-Language': 'he-IL,he;q=0.9,en-US;q=0.8',
-    },
+    extraHTTPHeaders: { 'Accept-Language': 'he-IL,he;q=0.9,en-US;q=0.8' },
   })
-  // Remove webdriver traces (belt + suspenders — stealth plugin also does this)
   await ctx.addInitScript(() => {
     Object.defineProperty(navigator, 'webdriver', { get: () => undefined })
-    // @ts-ignore
-    delete window.__playwright
-    // @ts-ignore
-    delete window.__pw_manual
   })
   return ctx
 }
