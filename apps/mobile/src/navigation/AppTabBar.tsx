@@ -19,7 +19,7 @@ const TABS: { name: string; icon: IoniconName; iconActive: IoniconName }[] = [
 export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets      = useSafeAreaInsets()
   const savedIds    = useSaved()
-  const savedCount  = savedIds.length
+  const savedCount  = savedIds.size
   const scaleAnims  = useRef<Map<string, Animated.Value>>(new Map()).current
 
   return (

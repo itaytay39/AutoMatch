@@ -28,6 +28,14 @@ const SearchSchema = z.object({
   limit: z.coerce.number().max(50).default(20),
 })
 
+function computePriceDelta(l: any): number | null {
+  const history: { price: number }[] = l.priceHistory ?? []
+  if (history.length < 2) return null
+  const oldest = history[0].price
+  const newest = history[history.length - 1].price
+  return newest - oldest
+}
+
 function enrich(l: any, peers: { price: number; mileage: number | null }[] = []) {
   const fraud = analyzeListing(l)
   const condition = scoreCondition({ ...l, ...fraud })
@@ -35,7 +43,8 @@ function enrich(l: any, peers: { price: number; mileage: number | null }[] = [])
   const ctx = buildMarketContext(peers.map(p => ({ ...l, price: p.price, mileage: p.mileage })))
   const anomaly = detectAnomalies(l, ctx.avgPrice ? ctx : { avgPrice: l.price, stdPrice: 0, avgMileage: l.mileage ?? 0, stdMileage: 0 })
   const salvage = checkSalvageRisk(l)
-  return { ...l, ...fraud, condition, market, anomaly, salvage }
+  const priceDelta = computePriceDelta(l)
+  return { ...l, ...fraud, condition, market, anomaly, salvage, priceDelta }
 }
 
 const listings: FastifyPluginAsync = async (app) => {
@@ -61,7 +70,7 @@ const listings: FastifyPluginAsync = async (app) => {
     const orderBy = SORT_MAP[query.sort] ?? SORT_MAP.newest
 
     const [rows, total] = await Promise.all([
-      app.prisma.listing.findMany({ where, skip, take: query.limit, orderBy }),
+      app.prisma.listing.findMany({ where, skip, take: query.limit, orderBy, include: { priceHistory: { orderBy: { date: 'asc' }, take: 2 } } }),
       app.prisma.listing.count({ where }),
     ])
 
