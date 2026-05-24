@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, spacing, fontSize, radii, shadows } from '../theme/tokens'
 import { fonts } from '../theme/typography'
+import { DualRange } from './DualRange'
 
 const { height: SH } = Dimensions.get('window')
 const SHEET_TOP = 40
@@ -194,36 +195,26 @@ export function FilterSheet({ visible, initial, resultCount, onApply, onClose }:
           </Section>
 
           <Section title="טווח מחיר">
-            <RangePresets
-              label="מינימום"
-              value={f.minPrice}
-              steps={PRICE_STEPS}
+            <DualRange
+              min={30000}
+              max={300000}
+              step={5000}
+              valMin={f.minPrice ?? 30000}
+              valMax={f.maxPrice ?? 300000}
+              onChange={(mn, mx) => { set('minPrice', mn); set('maxPrice', mx) }}
               format={fmtPrice}
-              onSelect={v => set('minPrice', v)}
-            />
-            <RangePresets
-              label="מקסימום"
-              value={f.maxPrice}
-              steps={PRICE_STEPS}
-              format={fmtPrice}
-              onSelect={v => set('maxPrice', v)}
             />
           </Section>
 
           <Section title="שנת ייצור">
-            <RangePresets
-              label="משנת"
-              value={f.yearMin}
-              steps={YEAR_STEPS}
-              format={v => String(v)}
-              onSelect={v => set('yearMin', v)}
-            />
-            <RangePresets
-              label="עד שנת"
-              value={f.yearMax}
-              steps={YEAR_STEPS}
-              format={v => String(v)}
-              onSelect={v => set('yearMax', v)}
+            <DualRange
+              min={2010}
+              max={2025}
+              step={1}
+              valMin={f.yearMin ?? 2010}
+              valMax={f.yearMax ?? 2025}
+              onChange={(mn, mx) => { set('yearMin', mn); set('yearMax', mx) }}
+              format={String}
             />
           </Section>
 
@@ -510,8 +501,8 @@ const chip = StyleSheet.create({
     borderColor: colors.border2,
   },
   active: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
+    backgroundColor: colors.fg1,
+    borderColor: colors.fg1,
   },
   label: {
     color: colors.fg1,
@@ -519,7 +510,7 @@ const chip = StyleSheet.create({
     fontFamily: fonts.medium,
   },
   labelActive: {
-    color: colors.onAccent,
+    color: '#fff',
     fontFamily: fonts.semibold,
   },
 })

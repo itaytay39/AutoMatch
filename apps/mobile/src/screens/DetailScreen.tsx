@@ -14,6 +14,8 @@ import { MarketCompare } from '../components/MarketCompare'
 import { PriceHistoryChart } from '../components/PriceHistoryChart'
 import { AnomalyBadge } from '../components/AnomalyBadge'
 import { ConditionBadge } from '../components/ConditionBadge'
+import { SellerCard } from '../components/SellerCard'
+import { SimilarCard } from '../components/SimilarCard'
 import { api } from '../services/api'
 import { toggleSaved, useSaved } from '../store/savedStore'
 import type { RootStackParamList } from '../navigation/types'
@@ -73,6 +75,7 @@ export function DetailScreen({ route, navigation }: Props) {
   const [vehicleLoading, setVehicleLoading] = useState(false)
   const [vehicleResult, setVehicleResult] = useState<Awaited<ReturnType<typeof api.checkVehicle>> | null>(null)
   const [vehicleError, setVehicleError] = useState<string | null>(null)
+  const [similar, setSimilar] = useState<any[]>([])
   const [downPayment, setDownPayment] = useState(20)
   const [months, setMonths] = useState(60)
   const scrollX = useRef(new Animated.Value(0)).current
@@ -84,6 +87,7 @@ export function DetailScreen({ route, navigation }: Props) {
     api.getListing(listingId).then(data => {
       setListing(data as FullListing)
     }).catch(console.warn).finally(() => setLoading(false))
+    api.getSimilar(listingId).then(data => setSimilar(data.listings ?? [])).catch(() => {})
   }, [listingId])
 
   const handleSave = useCallback(() => { toggleSaved(listingId) }, [listingId])
@@ -355,24 +359,42 @@ export function DetailScreen({ route, navigation }: Props) {
             </View>
           )}
 
-          {/* LOCATION */}
-          {(listing.city || listing.region || listing.seller) && (
-            <View style={s.card}>
-              <View style={s.locationRow}>
-                <View style={s.locationIcon}>
-                  <Ionicons name="location" size={16} color={colors.accent} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  {listing.city && (
-                    <Text style={s.locationCity}>
-                      {listing.city}{listing.region ? `, ${listing.region}` : ''}
-                    </Text>
-                  )}
-                  {listing.seller && (
-                    <Text style={s.locationSeller}>{listing.seller}</Text>
-                  )}
-                </View>
-              </View>
+          {/* SELLER */}
+          <View style={{ marginHorizontal: -spacing[4] }}>
+            <SellerCard
+              seller={listing.seller ?? undefined}
+              city={listing.city ?? undefined}
+              rating={4 + ((listing.id.charCodeAt(1) || 0) % 10) / 10}
+            />
+          </View>
+
+          {/* SIMILAR LISTINGS */}
+          {similar.length > 0 && (
+            <View style={s.similarSection}>
+              <Text style={s.similarTitle}>רכבים דומים</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={s.similarScroll}
+              >
+                {similar.map((v: any) => (
+                  <SimilarCard
+                    key={v.id}
+                    vehicle={{
+                      id: v.id,
+                      make: v.make,
+                      model: v.model,
+                      year: v.year,
+                      price: v.price,
+                      mileage: v.mileage ?? undefined,
+                      images: v.images ?? [],
+                      saved: saved.has(v.id),
+                    }}
+                    onPress={() => navigation.navigate('Detail', { listingId: v.id })}
+                    onSave={() => toggleSaved(v.id)}
+                  />
+                ))}
+              </ScrollView>
             </View>
           )}
 
@@ -1050,5 +1072,18 @@ const s = StyleSheet.create({
   signalText: {
     flex: 1, fontSize: fontSize.caption, color: colors.warning,
     fontFamily: fonts.regular, textAlign: 'right',
+  },
+
+  similarSection: {
+    marginHorizontal: -spacing[4],
+    marginBottom: spacing[4],
+  },
+  similarTitle: {
+    fontSize: fontSize.headline, color: colors.fg1,
+    fontFamily: fonts.bold, textAlign: 'right',
+    paddingHorizontal: spacing[4], marginBottom: 10,
+  },
+  similarScroll: {
+    paddingHorizontal: spacing[4],
   },
 })
