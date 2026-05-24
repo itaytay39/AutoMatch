@@ -1,0 +1,155 @@
+/* AutoMatch — restyled in ProTrip design language
+   Warm off-white + white sheets + royal blue accent.
+   More business/professional than ProTrip: tighter spacing, Inter for all numerals. */
+
+:root {
+  /* ── Surface ──────────────────────────────────────────────────── */
+  --bg-warm:     #F6F2EC;        /* page bg (warm off-white) */
+  --bg-deep:     #ECE5DD;        /* outside-the-phone */
+  --sheet:       #FFFFFF;
+  --sheet-2:     #F1ECE4;        /* subtle alt fill (inputs, tiles) */
+  --sheet-3:     #EAE3D8;        /* hover, pressed */
+
+  /* ── Ink ──────────────────────────────────────────────────────── */
+  --ink:         #1B1916;        /* primary text */
+  --ink-2:       #6D665C;        /* secondary */
+  --ink-3:       #A39A8E;        /* tertiary */
+  --ink-4:       #C5BEB1;        /* placeholder */
+  --ink-5:       #DDD3C3;
+
+  /* ── Lines ────────────────────────────────────────────────────── */
+  --line:        #ECE4D8;
+  --line-2:      #DDD3C3;
+
+  /* ── Brand: Royal Blue ────────────────────────────────────────── */
+  --accent:      #3450E8;
+  --accent-2:    #1F37C2;
+  --accent-soft: #E0E7FC;
+  --accent-ink:  #1D2E7A;
+  --on-accent:   #FFFFFF;
+
+  /* ── Signal: price/trend ──────────────────────────────────────── */
+  --good:        #1F5A3D;        /* price drop */
+  --good-bg:     #DCEBE0;
+  --warn:        #7A4A0D;        /* fair / sideways */
+  --warn-bg:     #F6E2C4;
+  --bad:         #9A2A14;        /* price up */
+  --bad-bg:      #FFE2D6;
+
+  /* ── Category accents (kept for Source dots + variety) ────────── */
+  --mint:        #3F8C68;
+  --sky:         #6AA2C2;
+  --amber:       #D69538;
+  --lilac:       #8E7BB1;
+  --sand:        #B49568;
+  --coral:       #EE6A50;
+
+  /* ── Type ─────────────────────────────────────────────────────── */
+  --font-he:  'Heebo', 'Rubik', 'Assistant', system-ui, sans-serif;
+  --font-num: 'Inter', 'Heebo', system-ui, sans-serif;
+
+  /* ── Shadow ───────────────────────────────────────────────────── */
+  --shadow-sm: 0 1px 0 rgba(0,0,0,0.02), 0 4px 16px -8px rgba(40,30,15,0.08);
+  --shadow-md: 0 2px 0 rgba(0,0,0,0.02), 0 8px 24px -8px rgba(40,30,15,0.10);
+  --shadow-lg: 0 20px 40px -10px rgba(40,30,15,0.18);
+  --shadow-brand: 0 12px 30px -12px rgba(52,80,232,0.55);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg-deep);
+  color: var(--ink);
+  font-family: var(--font-he);
+  font-feature-settings: 'ss01', 'cv01';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  direction: rtl;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background:
+    radial-gradient(1200px 600px at 20% 0%, #F2E6DB 0%, transparent 60%),
+    radial-gradient(900px 500px at 100% 100%, #E2EAE6 0%, transparent 60%),
+    #ECE5DD;
+}
+
+button { font-family: inherit; color: inherit; cursor: pointer; }
+input, textarea { font-family: inherit; }
+
+/* numeric — LTR isolate so prices read naturally even in RTL */
+.num {
+  font-family: var(--font-num);
+  font-feature-settings: 'tnum';
+  direction: ltr;
+  unicode-bidi: isolate;
+  display: inline-block;
+  letter-spacing: -0.01em;
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+
+/* Animations — ProTrip motion vocabulary */
+@keyframes am-rise   { 0% { transform: translateY(8px);   opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+@keyframes am-slide-up { 0% { transform: translateY(24px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+@keyframes am-fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes am-pop    { 0% { transform: scale(0.96); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes am-tab-in { 0% { transform: translateY(8px);  opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+@keyframes am-chart-draw { 0% { stroke-dashoffset: var(--len, 400); } 100% { stroke-dashoffset: 0; } }
+
+.am-rise      { animation: am-rise 320ms cubic-bezier(0.2, 0.9, 0.3, 1); }
+.am-slide-up  { animation: am-slide-up 320ms cubic-bezier(0.2, 0.9, 0.3, 1.05); }
+.am-fade-in   { animation: am-fade-in 240ms ease-out; }
+.am-pop       { animation: am-pop 260ms cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+.am-tab-in    { animation: am-tab-in 320ms cubic-bezier(0.2, 0.9, 0.3, 1); }
+
+.press { transition: transform 140ms cubic-bezier(0.2, 0.9, 0.3, 1), background 180ms ease, border-color 180ms ease, box-shadow 180ms ease; }
+.press:active { transform: scale(0.97); }
+
+input:focus, textarea:focus { outline: none; }
+
+/* Range slider — ProTrip style: thin track with royal-blue fill */
+input[type="range"].am-range {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 16px; background: transparent; direction: ltr;
+}
+input[type="range"].am-range::-webkit-slider-runnable-track {
+  height: 6px;
+  background:
+    linear-gradient(to right,
+      var(--accent) 0%, var(--accent) var(--rng-pct, 50%),
+      var(--sheet-3) var(--rng-pct, 50%), var(--sheet-3) 100%);
+  border-radius: 999px;
+}
+input[type="range"].am-range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 22px; height: 22px; border-radius: 999px;
+  background: var(--sheet); border: 2px solid var(--accent);
+  margin-top: -8px; cursor: pointer;
+  box-shadow: 0 2px 6px rgba(52,80,232,0.25);
+}
+input[type="range"].am-range::-moz-range-thumb {
+  width: 22px; height: 22px; border-radius: 999px;
+  background: var(--sheet); border: 2px solid var(--accent); cursor: pointer;
+}
+input[type="range"].am-range::-moz-range-track {
+  height: 6px; background: var(--sheet-3); border-radius: 999px;
+}
+
+/* Type — ProTrip's calmer hierarchy */
+.h-display { font-weight: 800; letter-spacing: -0.025em; line-height: 1.05; }
+.h-title   { font-weight: 700; letter-spacing: -0.015em; line-height: 1.2; }
+.eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+
+/* Hairline border (used heavily — replaces solid borders) */
+.hairline { border: 1px solid var(--line); }

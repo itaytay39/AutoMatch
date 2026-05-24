@@ -1,0 +1,165 @@
+// AutoMatch — mock data. Hebrew-first.
+
+const SOURCES = {
+  yad2:       { name: 'יד2',       color: '#F5C842' },
+  autoboom:   { name: 'אוטובום',   color: '#FF7A45' },
+  colmobil:   { name: 'קולמוביל',  color: '#5BC0EB' },
+  car2:       { name: 'CAR2',      color: '#A78BFA' },
+  autocenter: { name: 'אוטוסנטר', color: '#34D399' },
+};
+
+const VEHICLES = [
+  {
+    id: 'v1',
+    make: 'טויוטה', model: 'קורולה הייבריד', trim: 'Hybrid LE',
+    year: 2023, km: 28400, hand: 1, price: 119900, listPrice: 134000,
+    location: 'תל אביב', region: 'מרכז', source: 'yad2',
+    body: 'סדאן', fuel: 'היברידי', gearbox: 'אוטומט',
+    postedDays: 1, priceDelta: -4100, deltaPct: -3.3,
+    badge: 'מחיר טוב', badgeKind: 'good',
+    history: [134000, 132500, 131000, 128000, 124000, 121500, 119900],
+    seller: 'פרטי', images: 12,
+    spec: { engine: '1.8L Hybrid', power: '122 כ״ס', accel: '10.9 שנ׳', range: '1,000 ק״מ' },
+    desc: 'יד ראשונה, סוכנות. טסט שנתי בתוקף, כל הטיפולים בסוכנות. ללא תאונות.',
+  },
+  {
+    id: 'v2',
+    make: 'יונדאי', model: 'איוניק 5', trim: 'Long Range',
+    year: 2023, km: 22500, hand: 1, price: 189500, listPrice: 195000,
+    location: 'חיפה', region: 'צפון', source: 'autoboom',
+    body: 'קרוסאובר', fuel: 'חשמלי', gearbox: 'אוטומט',
+    postedDays: 0, priceDelta: -5500, deltaPct: -2.8,
+    badge: 'סביר', badgeKind: 'fair',
+    history: [205000, 202000, 198000, 195000, 192000, 191000, 189500],
+    seller: 'סוחר', images: 18,
+    spec: { engine: '77.4 kWh', power: '305 כ״ס', accel: '5.2 שנ׳', range: '481 ק״מ' },
+    desc: 'יד ראשונה מסוכנות. 800V, טעינה מהירה. כל המפרט. שמורה.',
+  },
+  {
+    id: 'v3',
+    make: 'סקודה', model: 'אוקטביה', trim: 'Style',
+    year: 2019, km: 120000, hand: 2, price: 98000, listPrice: 95000,
+    location: 'פתח תקווה', region: 'מרכז', source: 'autocenter',
+    body: 'סטיישן', fuel: 'בנזין', gearbox: 'אוטומט',
+    postedDays: 3, priceDelta: 0, deltaPct: 3.2,
+    badge: 'יקר', badgeKind: 'high',
+    history: [92000, 93000, 94000, 95000, 96500, 98000, 98000],
+    seller: 'פרטי', images: 9,
+    spec: { engine: '1.5 TSI', power: '150 כ״ס', accel: '8.9 שנ׳', range: '850 ק״מ' },
+    desc: 'מצב טוב, טופלה בזמן. צמיגים חדשים. מתאימה למשפחה.',
+  },
+  {
+    id: 'v4',
+    make: 'מאזדה', model: '3', trim: 'Premium',
+    year: 2020, km: 52000, hand: 1, price: 112000, listPrice: 118000,
+    location: 'ראשון לציון', region: 'מרכז', source: 'autoboom',
+    body: 'האצ׳בק', fuel: 'בנזין', gearbox: 'אוטומט',
+    postedDays: 2, priceDelta: -2000, deltaPct: -1.7,
+    badge: 'סביר', badgeKind: 'fair',
+    history: [122000, 120000, 118000, 116000, 114000, 113000, 112000],
+    seller: 'פרטי', images: 14,
+    spec: { engine: '2.0 SkyActiv', power: '122 כ״ס', accel: '9.1 שנ׳', range: '780 ק״מ' },
+    desc: 'מצב מצוין, יד ראשונה, גראז׳ חורף. כל הטיפולים אצל היבואן.',
+  },
+  {
+    id: 'v5',
+    make: 'פולקסווגן', model: 'גולף', trim: 'GTI',
+    year: 2021, km: 38000, hand: 1, price: 134000, listPrice: 145000,
+    location: 'ירושלים', region: 'ירושלים', source: 'colmobil',
+    body: 'האצ׳בק', fuel: 'בנזין', gearbox: 'אוטומט',
+    postedDays: 0, priceDelta: -3000, deltaPct: -2.2,
+    badge: 'מחיר טוב', badgeKind: 'good',
+    history: [148000, 145000, 142000, 140000, 138000, 137000, 134000],
+    seller: 'סוחר', images: 22,
+    spec: { engine: '2.0 TSI', power: '245 כ״ס', accel: '6.3 שנ׳', range: '650 ק״מ' },
+    desc: 'GTI מקורית, חבילת פרפורמנס. מטופלת היטב, כל הספרים.',
+  },
+  {
+    id: 'v6',
+    make: 'קיה', model: 'סטוניק', trim: 'GT-Line',
+    year: 2022, km: 45000, hand: 1, price: 87500, listPrice: 92000,
+    location: 'קריית ביאליק', region: 'צפון', source: 'yad2',
+    body: 'קרוסאובר', fuel: 'בנזין', gearbox: 'אוטומט',
+    postedDays: 1, priceDelta: -2500, deltaPct: -2.7,
+    badge: 'מחיר טוב', badgeKind: 'good',
+    history: [94000, 93000, 92000, 91000, 90000, 89000, 87500],
+    seller: 'פרטי', images: 11,
+    spec: { engine: '1.0 T-GDI', power: '120 כ״ס', accel: '10.7 שנ׳', range: '700 ק״מ' },
+    desc: 'יד ראשונה, מצב כמו חדש. אופציות מלאות.',
+  },
+  {
+    id: 'v7',
+    make: 'BMW', model: 'סדרה 3', trim: '320i M Sport',
+    year: 2022, km: 31000, hand: 1, price: 218000, listPrice: 235000,
+    location: 'הרצליה', region: 'מרכז', source: 'colmobil',
+    body: 'סדאן', fuel: 'בנזין', gearbox: 'אוטומט',
+    postedDays: 0, priceDelta: -7000, deltaPct: -3.1,
+    badge: 'מחיר טוב', badgeKind: 'good',
+    history: [240000, 235000, 230000, 225000, 222000, 220000, 218000],
+    seller: 'סוחר', images: 24,
+    spec: { engine: '2.0 TwinPower', power: '184 כ״ס', accel: '7.1 שנ׳', range: '720 ק״מ' },
+    desc: 'M Sport package, פנים עור, צג מקיף. שמורה למתעניינים רציניים.',
+  },
+  {
+    id: 'v8',
+    make: 'טסלה', model: 'Model 3', trim: 'Long Range',
+    year: 2022, km: 41000, hand: 1, price: 178000, listPrice: 188000,
+    location: 'גבעתיים', region: 'מרכז', source: 'car2',
+    body: 'סדאן', fuel: 'חשמלי', gearbox: 'אוטומט',
+    postedDays: 2, priceDelta: -4000, deltaPct: -2.2,
+    badge: 'סביר', badgeKind: 'fair',
+    history: [192000, 188000, 185000, 183000, 181000, 180000, 178000],
+    seller: 'פרטי', images: 16,
+    spec: { engine: 'Dual Motor', power: '440 כ״ס', accel: '4.4 שנ׳', range: '602 ק״מ' },
+    desc: 'AWD, אוטופיילוט מלא. סופרצ׳ארג׳ר חופשי. מצב מעולה.',
+  },
+];
+
+// suggestions for autocomplete — categorized
+const SUGGEST = [
+  { type: 'make',   text: 'טויוטה',          meta: '142 רכבים' },
+  { type: 'make',   text: 'יונדאי',          meta: '98 רכבים' },
+  { type: 'make',   text: 'BMW',             meta: '67 רכבים' },
+  { type: 'make',   text: 'מאזדה',           meta: '54 רכבים' },
+  { type: 'make',   text: 'קיה',              meta: '88 רכבים' },
+  { type: 'make',   text: 'סקודה',           meta: '71 רכבים' },
+  { type: 'make',   text: 'פולקסווגן',       meta: '63 רכבים' },
+  { type: 'make',   text: 'טסלה',            meta: '24 רכבים' },
+  { type: 'model',  text: 'קורולה הייבריד',  meta: 'טויוטה · 38 רכבים' },
+  { type: 'model',  text: 'איוניק 5',         meta: 'יונדאי · 17 רכבים' },
+  { type: 'model',  text: 'גולף GTI',         meta: 'פולקסווגן · 12 רכבים' },
+  { type: 'model',  text: 'סדרה 3',          meta: 'BMW · 29 רכבים' },
+  { type: 'model',  text: 'Model 3',         meta: 'טסלה · 14 רכבים' },
+  { type: 'model',  text: 'מאזדה 3',         meta: '21 רכבים' },
+  { type: 'query',  text: 'רכב משפחתי עד 100K', meta: 'חיפוש שמור' },
+  { type: 'query',  text: 'היברידי עד 5 שנים',   meta: 'חיפוש שמור' },
+  { type: 'query',  text: 'יד ראשונה ב-150K',   meta: 'חיפוש פופולרי' },
+];
+
+// recent searches
+const RECENT_SEARCHES = [
+  'קיה סטוניק 2022',
+  'גולף GTI יד ראשונה',
+  'היברידי עד 130K',
+];
+
+// alerts (saved searches that fire notifications)
+const ALERTS = [
+  {
+    id: 'a1', title: 'טויוטה קורולה הייבריד',
+    filters: ['משנת 2022', 'עד 140,000 ₪', 'מרכז'],
+    matches: 4, lastMatch: 'לפני 18 דק׳',
+  },
+  {
+    id: 'a2', title: 'יונדאי איוניק 5',
+    filters: ['משנת 2023', 'עד 200,000 ₪', 'יד ראשונה'],
+    matches: 2, lastMatch: 'אתמול',
+  },
+  {
+    id: 'a3', title: 'גולף GTI',
+    filters: ['2020-2023', 'עד 150,000 ₪', 'אוטומט'],
+    matches: 1, lastMatch: 'לפני 3 ימים',
+  },
+];
+
+window.AM_DATA = { SOURCES, VEHICLES, SUGGEST, RECENT_SEARCHES, ALERTS };
