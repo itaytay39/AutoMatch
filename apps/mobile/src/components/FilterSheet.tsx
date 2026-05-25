@@ -437,8 +437,8 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   handBtnActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
+    backgroundColor: colors.fg1,
+    borderColor: colors.fg1,
   },
   handLabel: {
     color: colors.fg1,
@@ -446,7 +446,7 @@ const s = StyleSheet.create({
     fontFamily: fonts.medium,
   },
   handLabelActive: {
-    color: colors.onAccent,
+    color: '#fff',
     fontFamily: fonts.semibold,
   },
   footer: {
