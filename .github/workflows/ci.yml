@@ -67,6 +67,7 @@ jobs:
         run: |
           cd services/api
           npm install
+          npx prisma generate --schema=../../packages/database/schema.prisma
           npm run build
           node dist/index.js &
           npx wait-on http://localhost:3000/health --timeout 15000
@@ -99,6 +100,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build API
-        run: docker build -t automatch-api ./services/api
+        run: docker build -t automatch-api -f services/api/Dockerfile .
       - name: Build Notifications
-        run: docker build -t automatch-notifications ./services/notifications
+        run: docker build -t automatch-notifications -f services/notifications/Dockerfile .
