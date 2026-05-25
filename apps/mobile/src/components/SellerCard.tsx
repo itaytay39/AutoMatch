@@ -9,9 +9,10 @@ interface SellerCardProps {
   city?: string
   phone?: string
   url?: string
+  rating?: number
 }
 
-export function SellerCard({ seller, city, phone, url }: SellerCardProps) {
+export function SellerCard({ seller, city, phone, url, rating }: SellerCardProps) {
   const name = seller || 'מוכר פרטי'
   const initials = name.charAt(0)
 
@@ -33,6 +34,19 @@ export function SellerCard({ seller, city, phone, url }: SellerCardProps) {
         </View>
         <View style={{ flex: 1, marginStart: 12 }}>
           <Text style={s.name}>{name}</Text>
+          {rating !== undefined && (
+            <View style={s.stars}>
+              {[1, 2, 3, 4, 5].map(i => (
+                <Ionicons
+                  key={i}
+                  name={i <= Math.floor(rating) ? 'star' : 'star-outline'}
+                  size={12}
+                  color={colors.accent}
+                />
+              ))}
+              <Text style={s.ratingText}>{rating.toFixed(1)}</Text>
+            </View>
+          )}
           {city ? (
             <View style={s.locationRow}>
               <Ionicons name="location-outline" size={13} color={colors.fg3} />
@@ -65,7 +79,6 @@ const s = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border1,
     padding: 16,
-    marginHorizontal: 16,
     marginBottom: 16,
     ...shadows.sm,
   },
@@ -76,6 +89,7 @@ const s = StyleSheet.create({
     color: colors.fg1,
     letterSpacing: -0.2,
     marginBottom: 14,
+    textAlign: 'right',
   },
   row: {
     flexDirection: 'row',
@@ -101,6 +115,20 @@ const s = StyleSheet.create({
     fontWeight: '700',
     color: colors.fg1,
     letterSpacing: -0.1,
+    textAlign: 'right',
+  },
+  stars: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    marginTop: 3,
+    marginBottom: 2,
+  },
+  ratingText: {
+    fontSize: 11,
+    fontFamily: fonts.medium,
+    color: colors.fg3,
+    marginStart: 3,
   },
   locationRow: {
     flexDirection: 'row',

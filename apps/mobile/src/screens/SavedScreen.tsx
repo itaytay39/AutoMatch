@@ -10,6 +10,8 @@ import type { StackNavigationProp } from '@react-navigation/stack'
 import { colors, spacing, fontSize, radii, shadows } from '../theme/tokens'
 import { fonts } from '../theme/typography'
 import { ListingCard } from '../components/ListingCard'
+import { SkeletonCard } from '../components/SkeletonCard'
+import { EmptyState } from '../components/EmptyState'
 import { useSaved } from '../store/savedStore'
 import { api } from '../services/api'
 import type { RootStackParamList } from '../navigation/types'
@@ -142,24 +144,19 @@ export function SavedScreen() {
           )}
 
           {loading ? (
-            <View style={s.loadingWrap}>
-              <ActivityIndicator size="large" color={colors.accent} />
-            </View>
+            <>
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </>
           ) : cards.length === 0 && !error ? (
-            <View style={s.emptyState}>
-              <View style={s.emptyIcon}>
-                <Ionicons name="bookmark-outline" size={40} color={colors.accSaved} />
-              </View>
-              <Text style={s.emptyTitle}>אין רכבים שמורים</Text>
-              <Text style={s.emptySub}>לחץ על ♥ בכרטיס רכב כדי לשמור אותו כאן</Text>
-              <TouchableOpacity
-                style={s.browseBtn}
-                onPress={() => navigation.navigate('Main')}
-                activeOpacity={0.85}
-              >
-                <Text style={s.browseBtnText}>גלוש ברכבים</Text>
-              </TouchableOpacity>
-            </View>
+            <EmptyState
+              icon="bookmark-outline"
+              title="אין רכבים שמורים"
+              subtitle="לחץ על ♥ בכרטיס רכב כדי לשמור אותו כאן"
+              action={() => navigation.navigate('Main')}
+              actionLabel="גלוש ברכבים"
+            />
           ) : (
             <View style={s.listWrap}>
               {cards.map((l) => {

@@ -1,6 +1,7 @@
 import React, { useRef, useCallback } from 'react'
 import { View, PanResponder, StyleSheet, Text } from 'react-native'
-import { colors, fonts } from '../theme/tokens'
+import { colors } from '../theme/tokens'
+import { fonts } from '../theme/typography'
 
 interface DualRangeProps {
   min: number

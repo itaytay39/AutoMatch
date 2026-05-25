@@ -32,13 +32,13 @@ vi.mock('@prisma/client', () => ({
   })),
 }))
 
-vi.mock('./firebase.js', () => ({
+vi.mock('./expoPush.js', () => ({
   sendPush: vi.fn().mockResolvedValue(undefined),
   sendMulticast: vi.fn().mockResolvedValue(undefined),
 }))
 
 const { matchAndNotify } = await import('./alertMatcher.js')
-const { sendPush } = await import('./firebase.js')
+const { sendPush } = await import('./expoPush.js')
 
 describe('alertMatcher', () => {
   beforeEach(() => vi.clearAllMocks())

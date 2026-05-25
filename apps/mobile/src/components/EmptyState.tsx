@@ -18,6 +18,10 @@ export function EmptyState({ icon, title, subtitle, action, actionLabel }: Empty
   return (
     <View style={s.wrap}>
       <View style={s.iconBadge}>
+        {/* decorative dot — top-right */}
+        <View style={s.dotTopRight} />
+        {/* decorative dot — bottom-left */}
+        <View style={s.dotBottomLeft} />
         <Ionicons name={icon} size={28} color={colors.accent} />
       </View>
       <Text style={s.title}>{title}</Text>
@@ -33,7 +37,6 @@ export function EmptyState({ icon, title, subtitle, action, actionLabel }: Empty
 
 const s = StyleSheet.create({
   wrap: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 40,
@@ -42,11 +45,33 @@ const s = StyleSheet.create({
   iconBadge: {
     width: 64,
     height: 64,
-    borderRadius: 20,
-    backgroundColor: colors.accentSoft,
+    borderRadius: 18,
+    backgroundColor: colors.bg1,
+    borderWidth: 1,
+    borderColor: colors.border2,
+    borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
+    position: 'relative',
+  },
+  dotTopRight: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.accentSoft,
+  },
+  dotBottomLeft: {
+    position: 'absolute',
+    bottom: -3,
+    left: -3,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.bg3,
   },
   title: {
     fontSize: 17,

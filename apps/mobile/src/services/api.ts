@@ -33,6 +33,9 @@ export const api = {
   deleteAlert: (id: string) =>
     req(`/alerts/${id}`, { method: 'DELETE' }),
 
+  getSimilar: (id: string) =>
+    req<{ listings: any[] }>(`/listings/${id}/similar`),
+
   checkVehicle: (plate: string, km?: number) => {
     const qs = km != null ? `?km=${km}` : ''
     return req<{

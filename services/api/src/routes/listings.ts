@@ -109,6 +109,30 @@ const listings: FastifyPluginAsync = async (app) => {
     return enrich(listing, peers)
   })
 
+  app.get('/listings/:id/similar', async (req, reply) => {
+    const { id } = req.params as { id: string }
+    const listing = await app.prisma.listing.findUnique({
+      where: { id },
+      select: { make: true, model: true, fuelType: true },
+    })
+    if (!listing) return reply.notFound()
+
+    const similar = await app.prisma.listing.findMany({
+      where: {
+        id: { not: id },
+        OR: [
+          { make: listing.make, model: listing.model },
+          ...(listing.fuelType ? [{ fuelType: listing.fuelType }] : []),
+        ],
+      },
+      select: { id: true, make: true, model: true, year: true, price: true, mileage: true, images: true },
+      take: 4,
+      orderBy: { createdAt: 'desc' },
+    })
+
+    return { listings: similar }
+  })
+
   app.get('/market/seasonal', async () => getSeasonalAlert())
 }
 
