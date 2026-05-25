@@ -10,6 +10,7 @@ import Svg, { Path, Circle } from 'react-native-svg'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import { ListingCard, type ListingCardData } from '../components/ListingCard'
+import { SkeletonCard } from '../components/SkeletonCard'
 import { colors, spacing, radii, shadows, gradients } from '../theme/tokens'
 import { fonts } from '../theme/typography'
 import { api } from '../services/api'
@@ -393,7 +394,11 @@ export function HomeScreen() {
           </View>
         )}
         {loading && (
-          <ActivityIndicator color={colors.accent} style={{ paddingVertical: 24 }} />
+          <View>
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </View>
         )}
       </View>
     </>

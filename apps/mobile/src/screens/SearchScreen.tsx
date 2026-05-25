@@ -10,6 +10,8 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import { ListingCard, type ListingCardData } from '../components/ListingCard'
 import { FilterSheet, FilterBadge, type Filters } from '../components/FilterSheet'
+import { SkeletonCard } from '../components/SkeletonCard'
+import { EmptyState } from '../components/EmptyState'
 import { colors, spacing, fontSize, radii, shadows } from '../theme/tokens'
 import { fonts } from '../theme/typography'
 import { api } from '../services/api'
@@ -193,15 +195,13 @@ export function SearchScreen() {
       </TouchableOpacity>
     </View>
   ) : (
-    <View style={s.emptyWrap}>
-      <Ionicons name="search-outline" size={52} color={colors.fg4} />
-      <Text style={s.emptyTitle}>לא מצאנו רכבים תואמים</Text>
-      {filterCount > 0 && (
-        <TouchableOpacity style={s.resetBtn} onPress={() => setFilters({})}>
-          <Text style={s.resetBtnText}>אפס פילטרים</Text>
-        </TouchableOpacity>
-      )}
-    </View>
+    <EmptyState
+      icon="search-outline"
+      title="לא מצאנו רכבים תואמים"
+      subtitle={filterCount > 0 ? 'נסה לאפס את הפילטרים' : undefined}
+      action={filterCount > 0 ? () => setFilters({}) : undefined}
+      actionLabel={filterCount > 0 ? 'אפס פילטרים' : undefined}
+    />
   )
 
   return (
@@ -293,7 +293,9 @@ export function SearchScreen() {
 
         {loading ? (
           <View style={s.loadingWrap}>
-            <ActivityIndicator size="large" color={colors.accent} />
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
           </View>
         ) : (
           <FlatList
