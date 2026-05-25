@@ -17,7 +17,7 @@ export default fp(async (app) => {
       timeout: 30_000,
     })
   } catch (e) {
-    app.log.warn('prisma migrate deploy failed (non-fatal):', e)
+    app.log.warn({ err: e }, 'prisma migrate deploy failed (non-fatal)')
   }
 
   const prisma = new PrismaClient()
