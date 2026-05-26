@@ -1,6 +1,8 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+RUN apk add --no-cache openssl
+
 COPY package.json package-lock.json* ./
 COPY packages/ ./packages/
 COPY services/notifications/ ./services/notifications/
@@ -14,6 +16,8 @@ RUN cd services/notifications && npm run build
 
 FROM node:20-alpine
 WORKDIR /app
+
+RUN apk add --no-cache openssl
 
 COPY --from=builder /app/services/notifications/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
