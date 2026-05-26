@@ -31,10 +31,6 @@ jobs:
         if: ${{ env.RAILWAY_TOKEN != '' }}
         run: railway up --service notifications --detach
 
-      - name: Deploy Web App
-        if: ${{ env.RAILWAY_TOKEN != '' }}
-        run: railway up --service webapp --detach
-
       - name: Health check post-deploy
         if: ${{ env.RAILWAY_TOKEN != '' && env.API_URL != '' }}
         run: |
