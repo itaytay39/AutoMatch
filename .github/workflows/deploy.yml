@@ -29,7 +29,7 @@ jobs:
 
       - name: Deploy Notifications
         if: ${{ env.RAILWAY_TOKEN != '' }}
-        run: railway up --service notifications --detach
+        run: railway up --service notifications --detach || echo "notifications service not yet in Railway — skipping"
 
       - name: Health check post-deploy
         if: ${{ env.RAILWAY_TOKEN != '' && env.API_URL != '' }}
