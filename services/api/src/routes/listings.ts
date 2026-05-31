@@ -6,6 +6,30 @@ import { compareToMarket, getSeasonalAlert } from '../lib/market.js'
 import { detectAnomalies, buildMarketContext } from '../lib/anomaly.js'
 import { checkSalvageRisk } from '../lib/salvage.js'
 
+const HE_MAKE: Record<string, string> = {
+  'קיה': 'Kia', 'כיה': 'Kia', 'טויוטה': 'Toyota', 'יונדאי': 'Hyundai',
+  'מזדה': 'Mazda', 'מאזדה': 'Mazda', 'ניסן': 'Nissan', 'ניסאן': 'Nissan',
+  'הונדה': 'Honda', 'פולקסווגן': 'Volkswagen', 'פורד': 'Ford', 'שברולט': 'Chevrolet',
+  'מיצובישי': 'Mitsubishi', 'סובארו': 'Subaru', 'סקודה': 'Skoda', 'אאודי': 'Audi',
+  'ב.מ.ו': 'BMW', 'ב.מ.וו': 'BMW', 'מרצדס': 'Mercedes-Benz', 'וולוו': 'Volvo',
+  "פיג'ו": 'Peugeot', 'רנו': 'Renault', 'סיטרואן': 'Citroën', 'אופל': 'Opel',
+  'פיאט': 'Fiat', 'טסלה': 'Tesla', 'סוזוקי': 'Suzuki', "דאצ'יה": 'Dacia',
+  "ג'יפ": 'Jeep', 'לקסוס': 'Lexus', 'סיאט': 'Seat',
+}
+const HE_MODEL: Record<string, string> = {
+  'סטוניק': 'Stonic', 'ספורטאג': 'Sportage', 'סורנטו': 'Sorento', 'ניירו': 'Niro',
+  'פיקנטו': 'Picanto', 'קורולה': 'Corolla', 'יאריס': 'Yaris', 'פריוס': 'Prius',
+  'טוסון': 'Tucson', 'סנטה פה': 'Santa Fe', 'אלנטרה': 'Elantra', 'קונה': 'Kona',
+  'גולף': 'Golf', 'פולו': 'Polo', 'טיגואן': 'Tiguan', 'פאסאט': 'Passat',
+  'אוקטביה': 'Octavia', 'קשקאי': 'Qashqai', "ג'וק": 'Juke', 'ליף': 'Leaf',
+  'פוקוס': 'Focus', 'פיאסטה': 'Fiesta', 'קוגה': 'Kuga', 'סיויק': 'Civic',
+  'מודל 3': 'Model 3', 'מודל y': 'Model Y', 'אאוטלנדר': 'Outlander',
+}
+
+function heToEn(word: string): string {
+  return HE_MAKE[word] ?? HE_MODEL[word.toLowerCase()] ?? word
+}
+
 const SORT_MAP: Record<string, object> = {
   newest:     { createdAt: 'desc' },
   price_asc:  { price: 'asc' },
@@ -15,6 +39,7 @@ const SORT_MAP: Record<string, object> = {
 }
 
 const SearchSchema = z.object({
+  q: z.string().optional(),
   make: z.string().optional(),
   model: z.string().optional(),
   yearMin: z.coerce.number().optional(),
@@ -52,9 +77,25 @@ const listings: FastifyPluginAsync = async (app) => {
     const query = SearchSchema.parse(req.query)
     const skip = (query.page - 1) * query.limit
 
+    // Normalize free-text query: "קיה סטוניק" → make=Kia, model=Stonic
+    let resolvedMake = query.make
+    let resolvedModel = query.model
+    if (query.q) {
+      const words = query.q.trim().split(/\s+/)
+      const firstEn = heToEn(words[0])
+      const isMake = HE_MAKE[words[0]] ?? Object.values(HE_MAKE).find(v => v.toLowerCase() === firstEn.toLowerCase())
+      if (isMake) {
+        resolvedMake = firstEn
+        if (words.length > 1) resolvedModel = heToEn(words.slice(1).join(' '))
+      } else {
+        // treat whole query as model/title search
+        resolvedModel = words.map(heToEn).join(' ')
+      }
+    }
+
     const where = {
-      ...(query.make && { make: { equals: query.make, mode: 'insensitive' as const } }),
-      ...(query.model && { model: { contains: query.model, mode: 'insensitive' as const } }),
+      ...(resolvedMake && { make: { equals: resolvedMake, mode: 'insensitive' as const } }),
+      ...(resolvedModel && { model: { contains: resolvedModel, mode: 'insensitive' as const } }),
       ...(query.yearMin && { year: { gte: query.yearMin } }),
       ...(query.yearMax && { year: { lte: query.yearMax } }),
       ...(query.minPrice || query.maxPrice ? {

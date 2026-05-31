@@ -116,8 +116,15 @@ export function SearchScreen() {
 
   const buildParams = useCallback((pg: number) => {
     const p: Record<string, string | number> = { limit: PAGE_SIZE, page: pg }
-    const q = normalizeQuery(query)
-    if (q.length >= 2) p.make = q
+    const raw = query.trim()
+    if (raw.length >= 2) {
+      const exactMake = HE_TO_EN[raw] ?? (Object.values(HE_TO_EN).find(v => v.toLowerCase() === raw.toLowerCase()))
+      if (exactMake && !raw.includes(' ')) {
+        p.make = exactMake   // exact make match → filter by make
+      } else {
+        p.q = raw            // free-text → API normalizes Hebrew→English
+      }
+    }
     if (filters.model)    p.model    = filters.model
     if (filters.yearMin)  p.yearMin  = filters.yearMin
     if (filters.yearMax)  p.yearMax  = filters.yearMax
