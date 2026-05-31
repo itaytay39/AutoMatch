@@ -15,6 +15,7 @@ export { avisConnector } from './avis.js'
 export { hertzConnector } from './hertz.js'
 export { albarConnector } from './albar.js'
 export { shlomoConnector } from './shlomo.js'
+export { keyzConnector } from './keyz.js'
 
 import { yad2Connector } from './yad2.js'
 import { homelessConnector } from './homeless.js'
@@ -33,6 +34,7 @@ import { avisConnector } from './avis.js'
 import { hertzConnector } from './hertz.js'
 import { albarConnector } from './albar.js'
 import { shlomoConnector } from './shlomo.js'
+import { keyzConnector } from './keyz.js'
 
 export const ALL_CONNECTORS = [
   yad2Connector,
@@ -52,4 +54,5 @@ export const ALL_CONNECTORS = [
   hertzConnector,
   albarConnector,
   shlomoConnector,
+  keyzConnector,
 ]
