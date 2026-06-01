@@ -19,6 +19,7 @@ import { SearchScreen } from './src/screens/SearchScreen'
 import { AlertsScreen } from './src/screens/AlertsScreen'
 import { SavedScreen } from './src/screens/SavedScreen'
 import { DetailScreen } from './src/screens/DetailScreen'
+import { CompareScreen } from './src/screens/CompareScreen'
 import { colors } from './src/theme/tokens'
 import { AppTabBar } from './src/navigation/AppTabBar'
 import type { RootStackParamList } from './src/navigation/types'
@@ -114,6 +115,19 @@ export default function App() {
                   }],
                 },
               }),
+            }}
+          />
+          <RootStack.Screen
+            name="Compare"
+            component={CompareScreen}
+            options={{
+              presentation: 'modal',
+              gestureEnabled: true,
+              gestureDirection: 'vertical',
+              transitionSpec: {
+                open:  { animation: 'timing', config: { duration: 320 } },
+                close: { animation: 'timing', config: { duration: 260 } },
+              },
             }}
           />
         </RootStack.Navigator>

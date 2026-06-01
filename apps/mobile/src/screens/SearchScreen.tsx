@@ -88,6 +88,8 @@ function toCard(l: any): ListingCardData {
     priceLabel, daysOnLot: l.daysOnLot,
     odometerSuspicious: l.odometerSuspicious,
     redFlags: l.redFlags, dealScore: l.dealScore,
+    anomalyLevel: l.anomaly?.anomalyLevel,
+    salvageRisk: l.salvage?.salvageRisk,
   }
 }
 

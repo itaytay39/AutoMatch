@@ -21,15 +21,6 @@ interface Alert {
   city?: string
 }
 
-const FIELDS: { key: keyof typeof EMPTY_FORM; label: string; numeric?: boolean }[] = [
-  { key: 'make',     label: 'יצרן (Toyota, Kia...)' },
-  { key: 'model',    label: 'דגם' },
-  { key: 'maxPrice', label: 'מחיר מקסימום (₪)', numeric: true },
-  { key: 'maxKm',    label: 'קילומטרים מקסימום', numeric: true },
-  { key: 'city',     label: 'עיר' },
-]
-
-const EMPTY_FORM = { make: '', model: '', maxPrice: '', maxKm: '', city: '' }
 
 const MAKES = ['Toyota', 'Kia', 'Hyundai', 'Mazda', 'Honda', 'Skoda', 'VW', 'Ford', 'BMW', 'Audi']
 const FUELS = ['בנזין', 'דיזל', 'היברידי', 'חשמלי']
@@ -291,7 +282,6 @@ export function AlertsScreen() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState(EMPTY_FORM)
   const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -313,20 +303,21 @@ export function AlertsScreen() {
     }
   }, [])
 
-  async function addAlert() {
-    if (!form.make || !userId) return
+  async function createAlertFromForm(data: {
+    make?: string; model?: string; yearMin?: number; maxPrice?: number
+    maxKm?: number; pushEnabled: boolean; emailEnabled: boolean; frequency: 'instant' | 'daily'
+  }) {
+    if (!userId) return
     try {
       const created = await api.createAlert({
         userId,
-        make: form.make || undefined,
-        model: form.model || undefined,
-        maxPrice: form.maxPrice ? Number(form.maxPrice) : undefined,
-        maxKm: form.maxKm ? Number(form.maxKm) : undefined,
-        city: form.city || undefined,
+        make: data.make,
+        model: data.model,
+        yearMin: data.yearMin,
+        maxPrice: data.maxPrice,
+        maxKm: data.maxKm,
       }) as Alert
       setAlerts(prev => [...prev, created])
-      setForm(EMPTY_FORM)
-      setShowForm(false)
     } catch (e) {
       console.warn('Failed to create alert:', e)
     }
@@ -462,9 +453,7 @@ export function AlertsScreen() {
       <AlertForm
         visible={showForm}
         onClose={() => setShowForm(false)}
-        onSubmit={() => {
-          addAlert()
-        }}
+        onSubmit={createAlertFromForm}
       />
     </SafeAreaView>
   )

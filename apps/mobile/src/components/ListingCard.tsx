@@ -26,6 +26,8 @@ export interface ListingCardData {
   deltaPct?: number
   trim?: string
   hand?: number
+  anomalyLevel?: 'clean' | 'watch' | 'suspicious' | 'alert'
+  salvageRisk?: boolean
 }
 
 interface Props {
@@ -82,6 +84,12 @@ const PRICE_BADGE: Record<string, { label: string; bg: string; fg: string }> = {
   good:      { label: 'מחיר טוב',  bg: '#DCEBE0', fg: '#1F5A3D' },
   fair:      { label: 'מחיר סביר', bg: '#F6E2C4', fg: '#7A4A0D' },
   expensive: { label: 'יקר',       bg: '#FFE2D6', fg: '#9A2A14' },
+}
+
+const ANOMALY_CFG: Record<string, { label: string; color: string; bg: string }> = {
+  watch:      { label: 'מצריך בדיקה', color: '#7A4A0D', bg: '#F6E2C4' },
+  suspicious: { label: 'חשוד',        color: '#B07A1A', bg: '#FFF3D0' },
+  alert:      { label: 'מחשיד מאוד',  color: '#9A2A14', bg: '#FFE2D6' },
 }
 
 const fmtPrice = (n: number) => `₪${n.toLocaleString('en-US')}`
@@ -219,6 +227,24 @@ export function ListingCard({ listing: v, onPress, onSave, saved = false, compac
           <View style={styles.warningRow}>
             <Ionicons name="warning-outline" size={12} color="#7A4A0D" />
             <Text style={styles.warningText}>קילומטראז' חשוד</Text>
+          </View>
+        )}
+
+        {/* Salvage risk */}
+        {v.salvageRisk && (
+          <View style={styles.salvageRow}>
+            <Ionicons name="warning" size={12} color="#B83A2A" />
+            <Text style={styles.salvageText}>בדוק ג׳נק / גנוב</Text>
+          </View>
+        )}
+
+        {/* Anomaly level */}
+        {v.anomalyLevel && v.anomalyLevel !== 'clean' && ANOMALY_CFG[v.anomalyLevel] && (
+          <View style={[styles.anomalyRow, { backgroundColor: ANOMALY_CFG[v.anomalyLevel].bg }]}>
+            <Ionicons name="alert-circle-outline" size={12} color={ANOMALY_CFG[v.anomalyLevel].color} />
+            <Text style={[styles.anomalyText, { color: ANOMALY_CFG[v.anomalyLevel].color }]}>
+              {ANOMALY_CFG[v.anomalyLevel].label}
+            </Text>
           </View>
         )}
 
@@ -414,6 +440,35 @@ const styles = StyleSheet.create({
     color: '#7A4A0D',
     fontFamily: fonts.medium,
     fontWeight: '500',
+  },
+
+  salvageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 5,
+  },
+  salvageText: {
+    fontSize: 11,
+    color: '#B83A2A',
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+  },
+
+  anomalyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 5,
+    borderRadius: 5,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    alignSelf: 'flex-start',
+  },
+  anomalyText: {
+    fontSize: 11,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
   },
 
   // Price row

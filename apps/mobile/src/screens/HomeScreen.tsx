@@ -34,6 +34,8 @@ function toCard(l: any): ListingCardData {
     odometerSuspicious: l.odometerSuspicious,
     redFlags: l.redFlags, dealScore: l.dealScore,
     priceDelta: l.priceDelta,
+    anomalyLevel: l.anomaly?.anomalyLevel,
+    salvageRisk: l.salvage?.salvageRisk,
   }
 }
 

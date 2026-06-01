@@ -24,6 +24,8 @@ interface ApiListing {
   daysOnLot?: number; odometerSuspicious?: boolean; redFlags?: string[]
   dealScore?: 'great' | 'good' | 'fair' | 'suspicious'
   market?: { priceRating: string }
+  anomaly?: { anomalyLevel: 'clean' | 'watch' | 'suspicious' | 'alert' }
+  salvage?: { salvageRisk: boolean }
 }
 
 function toCard(l: ApiListing) {
@@ -39,6 +41,8 @@ function toCard(l: ApiListing) {
     priceLabel, daysOnLot: l.daysOnLot,
     odometerSuspicious: l.odometerSuspicious,
     redFlags: l.redFlags, dealScore: l.dealScore,
+    anomalyLevel: l.anomaly?.anomalyLevel,
+    salvageRisk: l.salvage?.salvageRisk,
   }
 }
 
@@ -189,7 +193,11 @@ export function SavedScreen() {
         style={[s.compareCta, { transform: [{ translateY: ctaTranslate }] }]}
         pointerEvents={compareMode && selected.length >= 2 ? 'auto' : 'none'}
       >
-        <TouchableOpacity style={s.compareCtaBtn} activeOpacity={0.9}>
+        <TouchableOpacity
+          style={s.compareCtaBtn}
+          activeOpacity={0.9}
+          onPress={() => navigation.navigate('Compare', { listingIds: selected })}
+        >
           <Text style={s.compareCtaText}>השווה {selected.length} רכבים</Text>
         </TouchableOpacity>
       </Animated.View>

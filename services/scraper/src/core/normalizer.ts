@@ -1,4 +1,4 @@
-// Canonical make/model normalization for Hebrew + English variants
+// Canonical make/model/city normalization for Hebrew + English variants
 const MAKE_MAP: Record<string, string> = {
   'טויוטה': 'Toyota', 'toyota': 'Toyota',
   'יונדאי': 'Hyundai', 'hyundai': 'Hyundai',
@@ -64,35 +64,9 @@ export const MODEL_MAP: Record<string, string> = {
   'אאוטלנדר': 'Outlander', 'ASX': 'ASX', 'ספייס סטאר': 'Space Star',
 }
 
-export function normalizeMake(raw: string): string {
-  const key = raw.trim().toLowerCase()
-  return MAKE_MAP[key] ?? MAKE_MAP[raw.trim()] ?? raw.trim()
-}
-
-export function normalizeModel(raw: string): string {
-  const key = raw.trim().toLowerCase()
-  return MODEL_MAP[key] ?? MODEL_MAP[raw.trim()] ?? raw.trim()
-}
-
-export function normalizeCity(raw: string): string {
-  const key = raw.trim()
-  return CITY_MAP[key.toLowerCase()] ?? CITY_MAP[key] ?? key
-}
-
-export function normalizePrice(raw: string): number {
-  return parseInt(raw.replace(/[^0-9]/g, ''), 10) || 0
-}
-
-export function normalizeMileage(raw: string): number {
-  return parseInt(raw.replace(/[^0-9]/g, ''), 10) || 0
-}
-
-export function normalizeYear(raw: string): number {
-  const y = parseInt(raw.replace(/[^0-9]/g, ''), 10)
-  return y > 1990 && y <= new Date().getFullYear() + 1 ? y : 0
-}
+const CITY_MAP: Record<string, string> = {
   'ת"א': 'תל אביב', 'תל-אביב': 'תל אביב', 'tel aviv': 'תל אביב',
-  'י-ם': 'ירושלים', "ירושלים": 'ירושלים', 'jerusalem': 'ירושלים',
+  'י-ם': 'ירושלים', 'ירושלים': 'ירושלים', 'jerusalem': 'ירושלים',
   'חיפה': 'חיפה', 'haifa': 'חיפה',
   'ב"ש': 'באר שבע', 'באר-שבע': 'באר שבע', 'beer sheva': 'באר שבע',
   'פ"ת': 'פתח תקווה', 'petah tikva': 'פתח תקווה',
@@ -101,11 +75,19 @@ export function normalizeYear(raw: string): number {
   'נתניה': 'נתניה', 'netanya': 'נתניה',
   'אשדוד': 'אשדוד', 'ashdod': 'אשדוד',
   'חולון': 'חולון', 'holon': 'חולון',
+  'אילת': 'אילת', 'eilat': 'אילת',
+  'קריות': 'קריות', 'krayot': 'קריות',
+  'קרית ביאליק': 'קריות', 'קרית אתא': 'קריות', 'קרית מוצקין': 'קריות',
 }
 
 export function normalizeMake(raw: string): string {
   const key = raw.trim().toLowerCase()
   return MAKE_MAP[key] ?? MAKE_MAP[raw.trim()] ?? raw.trim()
+}
+
+export function normalizeModel(raw: string): string {
+  const key = raw.trim().toLowerCase()
+  return MODEL_MAP[key] ?? MODEL_MAP[raw.trim()] ?? raw.trim()
 }
 
 export function normalizeCity(raw: string): string {
